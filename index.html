@@ -102,7 +102,7 @@
 
         <textarea
           id="roarInput"
-          placeholder="ROAR YOUR THOUGHTS!! REX 🦖"
+          placeholder="ROAR YOUR THOUGHTS!! 🦖"
           class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 md:p-4 text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none h-24 mb-2 transition"
           required
         ></textarea>
@@ -279,11 +279,10 @@
         ...doc.data()
       }));
       renderRoars();
-      
-      // If profile is currently open, refresh its view live!
-      if (!profileView.classList.contains("hidden")) {
-        const activeName = profName.textContent;
-        openUserProfile(activeName, currentUser?.uid);
+
+      // If profile is open, update its content in real-time
+      if (!profileView.classList.contains("hidden") && currentUser) {
+        openUserProfile(profName.textContent, currentUser.uid);
       }
     });
 
@@ -293,7 +292,7 @@
       if (roars.length === 0) {
         feedContainer.innerHTML = `
           <div class="text-center py-16 text-slate-500">
-            <p class="text-base md:text-lg font-medium">No Roars yet! ROAR YOUR THOUGHTS!! REX 🦖</p>
+            <p class="text-base md:text-lg font-medium">No Roars yet! ROAR YOUR THOUGHTS!! 🦖</p>
           </div>
         `;
         return;
@@ -363,17 +362,14 @@
       resetNotice.classList.add("hidden");
     };
 
-    // Bulletproof Profile Filtering across UIDs, Handles, and Echo arrays
+    // Profile View matching by UID and Username
     window.openUserProfile = function(username, targetUid) {
       const targetUserLower = username.toLowerCase();
 
       const userRoars = roars.filter(r => {
         const isAuthored = (r.user && r.user.toLowerCase() === targetUserLower) || (targetUid && r.uid === targetUid);
-        
-        // Match echoedBy array by target UID OR matched username string
         const echoedBy = r.echoedBy || [];
-        const isEchoed = echoedBy.some(idOrName => idOrName === targetUid || idOrName.toLowerCase() === targetUserLower);
-        
+        const isEchoed = targetUid ? echoedBy.includes(targetUid) : false;
         return isAuthored || isEchoed;
       });
 
@@ -507,7 +503,7 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Unique Like/Echo Toggle Functions (Saves UID & Handle string)
+    // Clean Toggle Like Function (Stores 1 UID)
     window.toggleLike = async function(docId) {
       if (!currentUser) return alert("Sign in to impact Roars!");
       const roarDoc = doc(db, "roars", docId);
@@ -521,22 +517,17 @@
       }
     };
 
+    // Clean Toggle Echo Function (Stores 1 UID)
     window.toggleEcho = async function(docId) {
       if (!currentUser) return alert("Sign in to echo Roars!");
       const roarDoc = doc(db, "roars", docId);
       const target = roars.find(r => r.id === docId);
       const echoedBy = target?.echoedBy || [];
 
-      const userName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
-
-      if (echoedBy.includes(currentUser.uid) || echoedBy.includes(userName)) {
-        await updateDoc(roarDoc, { 
-          echoedBy: arrayRemove(currentUser.uid, userName) 
-        });
+      if (echoedBy.includes(currentUser.uid)) {
+        await updateDoc(roarDoc, { echoedBy: arrayRemove(currentUser.uid) });
       } else {
-        await updateDoc(roarDoc, { 
-          echoedBy: arrayUnion(currentUser.uid, userName) 
-        });
+        await updateDoc(roarDoc, { echoedBy: arrayUnion(currentUser.uid) });
       }
     };
 
