@@ -102,7 +102,7 @@
 
         <textarea
           id="roarInput"
-          placeholder="ROAR YOUR THOUGHTS!! 🦖"
+          placeholder="ROAR YOUR THOUGHTS!! REX 🦖"
           class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 md:p-4 text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none h-24 mb-2 transition"
           required
         ></textarea>
@@ -279,6 +279,12 @@
         ...doc.data()
       }));
       renderRoars();
+      
+      // If profile is currently open, refresh its view live!
+      if (!profileView.classList.contains("hidden")) {
+        const activeName = profName.textContent;
+        openUserProfile(activeName, currentUser?.uid);
+      }
     });
 
     function renderRoars() {
@@ -357,11 +363,17 @@
       resetNotice.classList.add("hidden");
     };
 
-    // Fixed Profile View: Checks both username AND UID for echoes!
+    // Bulletproof Profile Filtering across UIDs, Handles, and Echo arrays
     window.openUserProfile = function(username, targetUid) {
+      const targetUserLower = username.toLowerCase();
+
       const userRoars = roars.filter(r => {
-        const isAuthored = r.user.toLowerCase() === username.toLowerCase() || (targetUid && r.uid === targetUid);
-        const isEchoed = targetUid ? (r.echoedBy && r.echoedBy.includes(targetUid)) : false;
+        const isAuthored = (r.user && r.user.toLowerCase() === targetUserLower) || (targetUid && r.uid === targetUid);
+        
+        // Match echoedBy array by target UID OR matched username string
+        const echoedBy = r.echoedBy || [];
+        const isEchoed = echoedBy.some(idOrName => idOrName === targetUid || idOrName.toLowerCase() === targetUserLower);
+        
         return isAuthored || isEchoed;
       });
 
@@ -374,7 +386,7 @@
         profileFeed.innerHTML = `<p class="text-xs md:text-sm text-slate-500 text-center py-6">No activity or echoes from this user yet.</p>`;
       } else {
         userRoars.forEach(r => {
-          const isAuthored = r.user.toLowerCase() === username.toLowerCase();
+          const isAuthored = (r.user && r.user.toLowerCase() === targetUserLower) || (targetUid && r.uid === targetUid);
           const badgeHTML = isAuthored 
             ? '' 
             : `<div class="text-[10px] text-emerald-400 font-bold mb-1 flex items-center gap-1">🔁 Echoed by ${username}</div>`;
@@ -495,7 +507,7 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Unique Like/Echo Toggle Functions (1 per user)
+    // Unique Like/Echo Toggle Functions (Saves UID & Handle string)
     window.toggleLike = async function(docId) {
       if (!currentUser) return alert("Sign in to impact Roars!");
       const roarDoc = doc(db, "roars", docId);
@@ -515,10 +527,16 @@
       const target = roars.find(r => r.id === docId);
       const echoedBy = target?.echoedBy || [];
 
-      if (echoedBy.includes(currentUser.uid)) {
-        await updateDoc(roarDoc, { echoedBy: arrayRemove(currentUser.uid) });
+      const userName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
+
+      if (echoedBy.includes(currentUser.uid) || echoedBy.includes(userName)) {
+        await updateDoc(roarDoc, { 
+          echoedBy: arrayRemove(currentUser.uid, userName) 
+        });
       } else {
-        await updateDoc(roarDoc, { echoedBy: arrayUnion(currentUser.uid) });
+        await updateDoc(roarDoc, { 
+          echoedBy: arrayUnion(currentUser.uid, userName) 
+        });
       }
     };
 
