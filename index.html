@@ -2,120 +2,137 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Roarer - ROAR YOUR THOUGHTS!!</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Mobile app smooth viewport scroll */
+    body { -webkit-tap-highlight-color: transparent; }
+  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center p-4 font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center pb-20 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
 
-  <main class="w-full max-w-2xl border-x border-slate-800 min-h-screen p-4 flex flex-col">
-    <!-- Header -->
-    <header class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-      <h1 class="text-2xl font-black tracking-wider text-emerald-400 flex items-center gap-2">
+  <main class="w-full max-w-md border-x border-slate-900 min-h-screen flex flex-col bg-slate-950">
+    <!-- Mobile Glass Sticky Header -->
+    <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 py-3 flex items-center justify-between">
+      <h1 class="text-xl font-black tracking-wider text-emerald-400 flex items-center gap-1.5">
         🦖 ROARER
       </h1>
-      <div id="userStatus" class="text-xs font-mono bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800">
+      <div id="userStatus" class="text-xs font-mono bg-emerald-950/80 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-800/60 shadow-sm">
         Checking Auth...
       </div>
     </header>
 
-    <!-- Auth Container -->
-    <div id="authSection" class="mb-6 p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
-      <h2 class="text-lg font-bold">Sign in to Roar 🦖</h2>
-      
-      <!-- Google Sign-In Button -->
-      <button
-        id="googleBtn"
-        class="w-full bg-white text-slate-900 font-bold py-2 rounded-lg text-sm flex items-center justify-center gap-2 hover:bg-slate-200 transition"
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
-          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/>
-          <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.09z"/>
-          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.09c.95-2.85 3.6-4.96 6.72-4.96z"/>
-        </svg>
-        Continue with Google
-      </button>
+    <div class="p-4 flex-1">
+      <!-- Auth Screen (Shows if logged out) -->
+      <div id="authSection" class="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-3.5 shadow-xl">
+        <div class="text-center pb-1">
+          <h2 class="text-lg font-bold text-slate-100">Welcome to Roarer 🦖</h2>
+          <p class="text-xs text-slate-400">Sign in to share your thoughts with the world</p>
+        </div>
+        
+        <!-- Google Sign-In Button -->
+        <button
+          id="googleBtn"
+          class="w-full bg-slate-100 hover:bg-white text-slate-950 font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
+        >
+          <svg class="w-4 h-4" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+            <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/>
+            <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.09z"/>
+            <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.09c.95-2.85 3.6-4.96 6.72-4.96z"/>
+          </svg>
+          Continue with Google
+        </button>
 
-      <div class="flex items-center gap-2 my-2 text-slate-600 text-xs">
-        <div class="h-px bg-slate-800 flex-1"></div>
-        <span>OR</span>
-        <div class="h-px bg-slate-800 flex-1"></div>
+        <div class="flex items-center gap-2 my-2 text-slate-600 text-xs">
+          <div class="h-px bg-slate-800 flex-1"></div>
+          <span>OR</span>
+          <div class="h-px bg-slate-800 flex-1"></div>
+        </div>
+
+        <!-- Inputs -->
+        <input
+          type="email"
+          id="emailInput"
+          placeholder="Email address"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+        />
+        <input
+          type="password"
+          id="passInput"
+          placeholder="Password"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+        />
+
+        <div class="flex gap-2 pt-1">
+          <button
+            id="loginBtn"
+            class="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/10"
+          >
+            Log In
+          </button>
+          <button
+            id="signupBtn"
+            class="flex-1 border border-slate-700 hover:border-emerald-500 active:scale-95 text-slate-200 font-bold py-2.5 rounded-xl text-sm transition"
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <button
+          id="sendLinkBtn"
+          class="w-full text-xs text-slate-400 hover:text-emerald-400 underline text-center pt-2 block transition"
+        >
+          Send Passwordless Magic Link Instead
+        </button>
+
+        <!-- Spam Warning Message Box -->
+        <div id="spamNotice" class="hidden mt-3 p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-300 space-y-1">
+          <p class="font-bold flex items-center gap-1">📩 Check your inbox & spam folder!</p>
+          <p class="text-[11px] text-amber-200/80 leading-relaxed">
+            Email apps like Gmail think that we are spam, check your spam folder to see the passwordless email.
+          </p>
+        </div>
       </div>
 
-      <!-- Email/Password Inputs -->
-      <input
-        type="email"
-        id="emailInput"
-        placeholder="Email address"
-        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-      />
-      <input
-        type="password"
-        id="passInput"
-        placeholder="Password"
-        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-      />
+      <!-- Create Roar Form (Shows if logged in) -->
+      <form id="roarForm" class="mb-6 p-4 bg-slate-900/40 border border-slate-800/80 rounded-2xl hidden shadow-lg">
+        <textarea
+          id="roarInput"
+          placeholder="ROAR YOUR THOUGHTS!! 🦖"
+          class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none h-20 mb-2 transition"
+          required
+        ></textarea>
 
-      <div class="flex gap-2 pt-1">
-        <button
-          id="loginBtn"
-          class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg text-sm transition"
-        >
-          Log In
-        </button>
-        <button
-          id="signupBtn"
-          class="flex-1 border border-slate-700 hover:border-emerald-500 text-slate-200 font-bold py-2 rounded-lg text-sm transition"
-        >
-          Sign Up
-        </button>
-      </div>
+        <input
+          type="url"
+          id="mediaInput"
+          placeholder="Optional Image/Video URL..."
+          class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 mb-3 transition"
+        />
 
-      <button
-        id="sendLinkBtn"
-        class="w-full text-xs text-slate-400 hover:text-emerald-400 underline text-center pt-1 block"
-      >
-        Send Passwordless Magic Link Instead
-      </button>
+        <div class="flex justify-between items-center">
+          <button
+            type="button"
+            id="logoutBtn"
+            class="text-xs text-slate-500 hover:text-red-400 font-medium px-1 transition"
+          >
+            Sign Out
+          </button>
+          <button
+            type="submit"
+            class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20"
+          >
+            <span>ROAR REX</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Feed List -->
+      <div id="feed" class="space-y-3"></div>
     </div>
-
-    <!-- Create Roar Form (Shows if logged in) -->
-    <form id="roarForm" class="mb-6 border-b border-slate-800 pb-4 hidden">
-      <textarea
-        id="roarInput"
-        placeholder="ROAR YOUR THOUGHTS!! 🦖"
-        class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none h-24 mb-2"
-        required
-      ></textarea>
-
-      <input
-        type="url"
-        id="mediaInput"
-        placeholder="Optional Image/Video URL..."
-        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
-      />
-
-      <div class="flex justify-between items-center">
-        <button
-          type="button"
-          id="logoutBtn"
-          class="text-xs text-slate-500 hover:text-red-400"
-        >
-          Sign Out
-        </button>
-        <button
-          type="submit"
-          class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2 rounded-full transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20"
-        >
-          <span>Roar 🦖</span>
-        </button>
-      </div>
-    </form>
-
-    <!-- Feed List -->
-    <div id="feed" class="space-y-4"></div>
   </main>
 
   <!-- Firebase Script -->
@@ -134,11 +151,10 @@
       signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // Split API Key parts to pass GitHub secret scanner
+    // Split API Key
     const keyPart1 = "AIzaSyAj1k-";
     const keyPart2 = "Z70v0OK9w0hjvCfMi35p6CbqApis";
 
-    // Firebase Config
     const firebaseConfig = {
       apiKey: keyPart1 + keyPart2,
       authDomain: "everyroar.firebaseapp.com",
@@ -153,7 +169,6 @@
     const auth = getAuth(app);
     const googleProvider = new GoogleAuthProvider();
 
-    // Local State
     let roars = JSON.parse(localStorage.getItem("roarer_posts")) || [];
     let currentUser = null;
 
@@ -165,6 +180,7 @@
     const loginBtn = document.getElementById("loginBtn");
     const signupBtn = document.getElementById("signupBtn");
     const sendLinkBtn = document.getElementById("sendLinkBtn");
+    const spamNotice = document.getElementById("spamNotice");
     const emailInput = document.getElementById("emailInput");
     const passInput = document.getElementById("passInput");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -172,19 +188,17 @@
     const roarInput = document.getElementById("roarInput");
     const mediaInput = document.getElementById("mediaInput");
 
-    // Save to LocalStorage
     function saveRoars() {
       localStorage.setItem("roarer_posts", JSON.stringify(roars));
     }
 
-    // Render Feed
     function renderRoars() {
       feedContainer.innerHTML = "";
 
       if (roars.length === 0) {
         feedContainer.innerHTML = `
           <div class="text-center py-12 text-slate-500">
-            <p class="text-lg">No Roars yet! ROAR YOUR THOUGHTS!! 🦖</p>
+            <p class="text-sm">No Roars yet! ROAR YOUR THOUGHTS!! 🦖</p>
           </div>
         `;
         return;
@@ -192,38 +206,42 @@
 
       roars.forEach(roar => {
         const roarCard = document.createElement("div");
-        roarCard.className = "p-4 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-slate-700 transition relative group";
+        roarCard.className = "p-4 bg-slate-900/50 border border-slate-800/80 rounded-2xl hover:border-slate-700/80 transition relative shadow-sm";
         
         let mediaHTML = "";
         if (roar.media) {
           if (roar.media.match(/\.(mp4|webm|ogg)$/i)) {
-            mediaHTML = `<video src="${roar.media}" controls class="w-full rounded-lg mt-3 max-h-96 object-cover border border-slate-800"></video>`;
+            mediaHTML = `<video src="${roar.media}" controls class="w-full rounded-xl mt-3 max-h-72 object-cover border border-slate-800"></video>`;
           } else {
-            mediaHTML = `<img src="${roar.media}" alt="Roar media" class="w-full rounded-lg mt-3 max-h-96 object-cover border border-slate-800" onerror="this.style.display='none'" />`;
+            mediaHTML = `<img src="${roar.media}" alt="Roar media" class="w-full rounded-xl mt-3 max-h-72 object-cover border border-slate-800" onerror="this.style.display='none'" />`;
           }
         }
 
+        const isOwner = currentUser && (roar.uid === currentUser.uid || roar.user === (currentUser.displayName || currentUser.email?.split('@')[0]));
+        const deleteBtnHTML = isOwner 
+          ? `<button onclick="deleteRoar(${roar.id})" class="text-slate-600 hover:text-red-400 text-xs p-1 transition">✕</button>` 
+          : '';
+
         roarCard.innerHTML = `
           <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-slate-200">${roar.user}</span>
-              <span class="text-xs bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                🦖 Verified Roarer
+            <div class="flex items-center gap-1.5 overflow-hidden">
+              <span class="font-bold text-slate-200 text-sm truncate">${roar.user}</span>
+              <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+                🦖 Verified
               </span>
-              <span class="text-sm text-slate-500">${roar.handle}</span>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-500">${roar.timestamp}</span>
-              <button onclick="deleteRoar(${roar.id})" class="text-slate-600 hover:text-red-400 text-xs px-1">✕</button>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="text-[11px] text-slate-500">${roar.timestamp}</span>
+              ${deleteBtnHTML}
             </div>
           </div>
-          <p class="text-slate-300 my-2 whitespace-pre-wrap">${roar.content}</p>
+          <p class="text-slate-300 text-sm my-2 whitespace-pre-wrap leading-relaxed">${roar.content}</p>
           ${mediaHTML}
-          <div class="flex gap-6 mt-3 text-xs text-slate-400">
-            <button onclick="echoRoar(${roar.id})" class="hover:text-emerald-400 flex items-center gap-1 transition">
-              🔁 ${roar.echos} Echo-Roars
+          <div class="flex gap-6 mt-3 text-xs text-slate-400 pt-1 border-t border-slate-800/40">
+            <button onclick="echoRoar(${roar.id})" class="hover:text-emerald-400 flex items-center gap-1 transition active:scale-95">
+              🔁 ${roar.echos} Echoes
             </button>
-            <button onclick="likeRoar(${roar.id})" class="hover:text-red-400 flex items-center gap-1 transition">
+            <button onclick="likeRoar(${roar.id})" class="hover:text-red-400 flex items-center gap-1 transition active:scale-95">
               🔥 ${roar.likes} Impact
             </button>
           </div>
@@ -232,17 +250,18 @@
       });
     }
 
-    // Post Roar
+    // Submit Roar
     roarForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const text = roarInput.value.trim();
       const media = mediaInput.value.trim();
-      if (!text) return;
+      if (!text || !currentUser) return;
 
-      const userName = currentUser?.displayName || currentUser?.email?.split('@')[0] || "Roarer";
+      const userName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
 
       const newRoar = {
         id: Date.now(),
+        uid: currentUser.uid,
         user: userName,
         handle: `@${userName.toLowerCase().replace(/\s+/g, '')}`,
         content: text,
@@ -259,7 +278,7 @@
       renderRoars();
     });
 
-    // 1. Google Auth
+    // Google Sign-In
     googleBtn.addEventListener("click", async () => {
       try {
         await signInWithPopup(auth, googleProvider);
@@ -268,7 +287,7 @@
       }
     });
 
-    // 2. Email / Password Signup
+    // Email/Password Signup
     signupBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       const password = passInput.value.trim();
@@ -281,7 +300,7 @@
       }
     });
 
-    // 3. Email / Password Login
+    // Email/Password Login
     loginBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       const password = passInput.value.trim();
@@ -294,7 +313,7 @@
       }
     });
 
-    // 4. Passwordless Link
+    // Passwordless Magic Link
     const actionCodeSettings = {
       url: window.location.href,
       handleCodeInApp: true,
@@ -302,18 +321,17 @@
 
     sendLinkBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
-      if (!email) return alert("Enter your email!");
+      if (!email) return alert("Enter your email first!");
 
       try {
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
         window.localStorage.setItem('emailForSignIn', email);
-        alert("Magic link sent! Check your inbox.");
+        spamNotice.classList.remove("hidden");
       } catch (err) {
         alert("Magic Link Error: " + err.message);
       }
     });
 
-    // Complete Passwordless Sign-In if coming back from email
     if (isSignInWithEmailLink(auth, window.location.href)) {
       let email = window.localStorage.getItem('emailForSignIn');
       if (!email) email = window.prompt('Confirm your email:');
@@ -322,7 +340,7 @@
         .catch((err) => alert("Sign-in error: " + err.message));
     }
 
-    // Auth State Listener
+    // Auth Listener
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       if (user) {
@@ -337,10 +355,8 @@
       renderRoars();
     });
 
-    // Logout
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Global Feed Interactions
     window.likeRoar = function(id) {
       const target = roars.find(r => r.id === id);
       if (target) {
@@ -360,6 +376,7 @@
     };
 
     window.deleteRoar = function(id) {
+      if (!currentUser) return alert("You must be signed in to delete!");
       roars = roars.filter(r => r.id !== id);
       saveRoars();
       renderRoars();
