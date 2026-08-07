@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roarer - ROAR YOUR THOUGHTS!!</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center p-4 font-sans">
+
+  <main class="w-full max-w-2xl border-x border-slate-800 min-h-screen p-4 flex flex-col">
+    <!-- Header -->
+    <header class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+      <h1 class="text-2xl font-black tracking-wider text-emerald-400 flex items-center gap-2">
+        🦖 ROARER
+      </h1>
+      <span class="text-xs font-mono bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800">
+        Live Feed
+      </span>
+    </header>
+
+    <!-- Create Roar Form -->
+    <form id="roarForm" class="mb-6 border-b border-slate-800 pb-4">
+      <textarea
+        id="roarInput"
+        placeholder="ROAR YOUR THOUGHTS!! REX..."
+        class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none h-24 mb-2"
+        required
+      ></textarea>
+
+      <!-- Optional Media URL Input -->
+      <input
+        type="url"
+        id="mediaInput"
+        placeholder="Optional Image/Video URL..."
+        class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
+      />
+
+      <div class="flex justify-end">
+        <button
+          type="submit"
+          class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2 rounded-full transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20"
+        >
+          <span>Roar 🦖</span>
+        </button>
+      </div>
+    </form>
+
+    <!-- Feed List -->
+    <div id="feed" class="space-y-4">
+      <!-- User Roars dynamically render here -->
+    </div>
+  </main>
+
+  <script>
+    // Load existing roars from LocalStorage or start empty
+    let roars = JSON.parse(localStorage.getItem("roarer_posts")) || [];
+
+    const feedContainer = document.getElementById("feed");
+    const roarForm = document.getElementById("roarForm");
+    const roarInput = document.getElementById("roarInput");
+    const mediaInput = document.getElementById("mediaInput");
+
+    // Save to LocalStorage
+    function saveRoars() {
+      localStorage.setItem("roarer_posts", JSON.stringify(roars));
+    }
+
+    // Render Roars Function
+    function renderRoars() {
+      feedContainer.innerHTML = "";
+
+      if (roars.length === 0) {
+        feedContainer.innerHTML = `
+          <div class="text-center py-12 text-slate-500">
+            <p class="text-lg">No Roars yet! ROAR YOUR THOUGHTS!! 🦖</p>
+          </div>
+        `;
+        return;
+      }
+
+      roars.forEach(roar => {
+        const roarCard = document.createElement("div");
+        roarCard.className = "p-4 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-slate-700 transition relative group";
+        
+        // Media Attachment Renderer
+        let mediaHTML = "";
+        if (roar.media) {
+          if (roar.media.match(/\.(mp4|webm|ogg)$/i)) {
+            mediaHTML = `<video src="${roar.media}" controls class="w-full rounded-lg mt-3 max-h-96 object-cover border border-slate-800"></video>`;
+          } else {
+            mediaHTML = `<img src="${roar.media}" alt="Roar media" class="w-full rounded-lg mt-3 max-h-96 object-cover border border-slate-800" onerror="this.style.display='none'" />`;
+          }
+        }
+
+        roarCard.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-200">${roar.user}</span>
+              <span class="text-xs bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                🦖 Verified Roarer
+              </span>
+              <span class="text-sm text-slate-500">${roar.handle}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500">${roar.timestamp}</span>
+              <button onclick="deleteRoar(${roar.id})" class="text-slate-600 hover:text-red-400 text-xs px-1">✕</button>
+            </div>
+          </div>
+          <p class="text-slate-300 my-2 whitespace-pre-wrap">${roar.content}</p>
+          ${mediaHTML}
+          <div class="flex gap-6 mt-3 text-xs text-slate-400">
+            <button onclick="echoRoar(${roar.id})" class="hover:text-emerald-400 flex items-center gap-1 transition">
+              🔁 ${roar.echos} Echo-Roars
+            </button>
+            <button onclick="likeRoar(${roar.id})" class="hover:text-red-400 flex items-center gap-1 transition">
+              🔥 ${roar.likes} Impact
+            </button>
+          </div>
+        `;
+        feedContainer.appendChild(roarCard);
+      });
+    }
+
+    // Add New Roar
+    roarForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const text = roarInput.value.trim();
+      const media = mediaInput.value.trim();
+      if (!text) return;
+
+      const newRoar = {
+        id: Date.now(),
+        user: "Creator",
+        handle: "@creator",
+        content: text,
+        media: media || null,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        likes: 0,
+        echos: 0,
+      };
+
+      roars.unshift(newRoar);
+      saveRoars();
+      roarInput.value = "";
+      mediaInput.value = "";
+      renderRoars();
+    });
+
+    // Interaction Handlers
+    window.likeRoar = function(id) {
+      const target = roars.find(r => r.id === id);
+      if (target) {
+        target.likes++;
+        saveRoars();
+        renderRoars();
+      }
+    };
+
+    window.echoRoar = function(id) {
+      const target = roars.find(r => r.id === id);
+      if (target) {
+        target.echos++;
+        saveRoars();
+        renderRoars();
+      }
+    };
+
+    window.deleteRoar = function(id) {
+      roars = roars.filter(r => r.id !== id);
+      saveRoars();
+      renderRoars();
+    };
+
+    // Initial Render
+    renderRoars();
+  </script>
+</body>
+</html>
