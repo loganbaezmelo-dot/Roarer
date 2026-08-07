@@ -196,6 +196,18 @@
       onAuthStateChanged,
       signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      onSnapshot, 
+      query, 
+      orderBy, 
+      deleteDoc, 
+      doc, 
+      updateDoc, 
+      increment 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const keyPart1 = "AIzaSyAj1k-";
     const keyPart2 = "Z70v0OK9w0hjvCfMi35p6CbqApis";
@@ -212,9 +224,10 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
     const googleProvider = new GoogleAuthProvider();
 
-    let roars = JSON.parse(localStorage.getItem("roarer_posts")) || [];
+    let roars = [];
     let currentUser = null;
 
     // Elements
@@ -244,9 +257,17 @@
     const profRoarCount = document.getElementById("profRoarCount");
     const profileFeed = document.getElementById("profileFeed");
 
-    function saveRoars() {
-      localStorage.setItem("roarer_posts", JSON.stringify(roars));
-    }
+    // Firestore Real-Time Global Feed Listener
+    const roarsRef = collection(db, "roars");
+    const roarsQuery = query(roarsRef, orderBy("createdAt", "desc"));
+
+    onSnapshot(roarsQuery, (snapshot) => {
+      roars = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      renderRoars();
+    });
 
     function renderRoars() {
       feedContainer.innerHTML = "";
@@ -273,9 +294,9 @@
           }
         }
 
-        const isOwner = currentUser && (roar.uid === currentUser.uid || roar.user === (currentUser.displayName || currentUser.email?.split('@')[0]));
+        const isOwner = currentUser && roar.uid === currentUser.uid;
         const deleteBtnHTML = isOwner 
-          ? `<button onclick="deleteRoar(${roar.id})" class="text-slate-600 hover:text-red-400 text-xs p-1 transition">✕</button>` 
+          ? `<button onclick="deleteRoar('${roar.id}')" class="text-slate-600 hover:text-red-400 text-xs p-1 transition">✕</button>` 
           : '';
 
         roarCard.innerHTML = `
@@ -294,11 +315,11 @@
           <p class="text-slate-300 text-sm my-2 whitespace-pre-wrap leading-relaxed">${roar.content}</p>
           ${mediaHTML}
           <div class="flex gap-6 mt-3 text-xs text-slate-400 pt-1 border-t border-slate-800/40">
-            <button onclick="echoRoar(${roar.id})" class="hover:text-emerald-400 flex items-center gap-1 transition active:scale-95">
-              🔁 ${roar.echos} Echoes
+            <button onclick="echoRoar('${roar.id}')" class="hover:text-emerald-400 flex items-center gap-1 transition active:scale-95">
+              🔁 ${roar.echos || 0} Echoes
             </button>
-            <button onclick="likeRoar(${roar.id})" class="hover:text-red-400 flex items-center gap-1 transition active:scale-95">
-              🔥 ${roar.likes} Impact
+            <button onclick="likeRoar('${roar.id}')" class="hover:text-red-400 flex items-center gap-1 transition active:scale-95">
+              🔥 ${roar.likes || 0} Impact
             </button>
           </div>
         `;
@@ -364,8 +385,8 @@
       }
     });
 
-    // Form Submit
-    roarForm.addEventListener("submit", (e) => {
+    // Create Roar in Firestore
+    roarForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = roarInput.value.trim();
       const media = mediaInput.value.trim();
@@ -373,23 +394,24 @@
 
       const userName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
 
-      const newRoar = {
-        id: Date.now(),
-        uid: currentUser.uid,
-        user: userName,
-        handle: `@${userName.toLowerCase().replace(/\s+/g, '')}`,
-        content: text,
-        media: media || null,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        likes: 0,
-        echos: 0,
-      };
+      try {
+        await addDoc(roarsRef, {
+          uid: currentUser.uid,
+          user: userName,
+          handle: `@${userName.toLowerCase().replace(/\s+/g, '')}`,
+          content: text,
+          media: media || null,
+          createdAt: Date.now(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          likes: 0,
+          echos: 0,
+        });
 
-      roars.unshift(newRoar);
-      saveRoars();
-      roarInput.value = "";
-      mediaInput.value = "";
-      renderRoars();
+        roarInput.value = "";
+        mediaInput.value = "";
+      } catch (err) {
+        alert("Error publishing Roar: " + err.message);
+      }
     });
 
     // Auth Actions
@@ -431,24 +453,23 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    window.likeRoar = function(id) {
-      const target = roars.find(r => r.id === id);
-      if (target) { target.likes++; saveRoars(); renderRoars(); }
+    // Global Database Interactions
+    window.likeRoar = async function(docId) {
+      if (!currentUser) return alert("Sign in to like Roars!");
+      const roarDoc = doc(db, "roars", docId);
+      await updateDoc(roarDoc, { likes: increment(1) });
     };
 
-    window.echoRoar = function(id) {
-      const target = roars.find(r => r.id === id);
-      if (target) { target.echos++; saveRoars(); renderRoars(); }
+    window.echoRoar = async function(docId) {
+      if (!currentUser) return alert("Sign in to echo Roars!");
+      const roarDoc = doc(db, "roars", docId);
+      await updateDoc(roarDoc, { echos: increment(1) });
     };
 
-    window.deleteRoar = function(id) {
+    window.deleteRoar = async function(docId) {
       if (!currentUser) return alert("You must be signed in to delete!");
-      roars = roars.filter(r => r.id !== id);
-      saveRoars();
-      renderRoars();
+      await deleteDoc(doc(db, "roars", docId));
     };
-
-    renderRoars();
   </script>
 </body>
 </html>
