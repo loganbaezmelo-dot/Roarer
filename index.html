@@ -149,21 +149,21 @@
           ⚙️ Account Settings
         </h2>
 
-        <!-- Profile Picture Preview & Upload -->
         <div class="flex flex-col items-center gap-3 py-2 border-b border-slate-800/80 pb-5">
           <div id="settingsPfpPreview" class="w-20 h-20 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center text-3xl overflow-hidden font-black">
             🦖
           </div>
-          <div class="text-center">
+          <div class="text-center space-y-2">
             <label for="pfpFileInput" class="inline-block bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer transition">
               📷 Choose Image from Files
             </label>
             <input type="file" id="pfpFileInput" accept="image/*" class="hidden" />
-            <p class="text-[11px] text-slate-500 mt-1">Upload JPG or PNG from your device</p>
+            <button type="button" id="resetGooglePfpBtn" class="block mx-auto text-[11px] text-slate-400 hover:text-emerald-400 underline">
+              Reset to Google Profile Picture
+            </button>
           </div>
         </div>
 
-        <!-- Custom Name Input -->
         <div class="space-y-1.5">
           <label class="text-xs font-mono text-slate-400 uppercase tracking-wider block">Display Name</label>
           <input
@@ -332,10 +332,25 @@
 
     const settingsPfpPreview = document.getElementById("settingsPfpPreview");
     const pfpFileInput = document.getElementById("pfpFileInput");
+    const resetGooglePfpBtn = document.getElementById("resetGooglePfpBtn");
     const settingsNameInput = document.getElementById("settingsNameInput");
     const saveSettingsBtn = document.getElementById("saveSettingsBtn");
 
-    // Real-time Users Listener
+    // Helper: Priority check for User Profile Picture
+    function getUserPfp(uid) {
+      const localCustom = localStorage.getItem(`pfp_custom_${uid}`);
+      if (localCustom) return localCustom;
+
+      const userDoc = usersMap[uid];
+      if (userDoc && userDoc.pfp) return userDoc.pfp;
+
+      if (currentUser && currentUser.uid === uid) {
+        return currentUser.photoURL || null;
+      }
+      return null;
+    }
+
+    // Users Listener
     onSnapshot(collection(db, "users"), (snapshot) => {
       snapshot.docs.forEach(d => {
         usersMap[d.id] = d.data();
@@ -348,7 +363,7 @@
       }
     });
 
-    // Real-Time Feed Listener
+    // Feed Listener
     const roarsRef = collection(db, "roars");
     const roarsQuery = query(roarsRef, orderBy("createdAt", "desc"));
 
@@ -364,7 +379,7 @@
       }
     });
 
-    // Compress uploaded image safely for Firestore
+    // Image Compressor
     function compressImage(file, maxWidth, quality, callback) {
       const reader = new FileReader();
       reader.onload = function(event) {
@@ -402,7 +417,7 @@
       if (!currentUser) return;
       const userDoc = usersMap[currentUser.uid];
       const name = userDoc?.displayName || currentUser.displayName || currentUser.email.split('@')[0];
-      const pfp = userDoc?.pfp || currentUser.photoURL || null;
+      const pfp = getUserPfp(currentUser.uid);
 
       userStatus.innerHTML = `
         ${getAvatarHTML(pfp, "w-5 h-5 text-[10px]")}
@@ -446,7 +461,7 @@
         const hasEchoed = currentUser && echoedBy.includes(currentUser.uid);
 
         const authorDoc = usersMap[roar.uid];
-        const displayPfp = authorDoc?.pfp || roar.userPfp;
+        const displayPfp = getUserPfp(roar.uid) || roar.userPfp;
         const displayName = authorDoc?.displayName || roar.user;
 
         const pfpHTML = getAvatarHTML(displayPfp, "w-8 h-8 md:w-9 md:h-9 text-xs");
@@ -505,7 +520,7 @@
       const userDoc = usersMap[currentUser.uid];
       const currentName = userDoc?.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
       settingsNameInput.value = currentName;
-      tempSelectedPfp = userDoc?.pfp || currentUser.photoURL || null;
+      tempSelectedPfp = getUserPfp(currentUser.uid);
       settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
       window.scrollTo(0, 0);
     };
@@ -514,13 +529,21 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      compressImage(file, 100, 0.6, (compressedDataUrl) => {
+      compressImage(file, 90, 0.6, (compressedDataUrl) => {
         tempSelectedPfp = compressedDataUrl;
         settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
       });
     });
 
-    // Save Settings Button (Writes PFP permanently to Firestore User Doc)
+    // Reset back to Google Profile Picture Button
+    resetGooglePfpBtn.addEventListener("click", () => {
+      if (!currentUser) return;
+      localStorage.removeItem(`pfp_custom_${currentUser.uid}`);
+      tempSelectedPfp = currentUser.photoURL || null;
+      settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
+    });
+
+    // Save Settings Button
     saveSettingsBtn.addEventListener("click", async () => {
       if (!currentUser) return;
       const newName = settingsNameInput.value.trim();
@@ -530,26 +553,29 @@
       saveSettingsBtn.textContent = "Saving...";
 
       try {
-        await updateProfile(currentUser, { displayName: newName });
+        // Force custom image lock into localStorage
+        if (tempSelectedPfp) {
+          localStorage.setItem(`pfp_custom_${currentUser.uid}`, tempSelectedPfp);
+        }
 
-        const finalPfp = tempSelectedPfp || usersMap[currentUser.uid]?.pfp || currentUser.photoURL || null;
+        await updateProfile(currentUser, { displayName: newName });
 
         const userDocRef = doc(db, "users", currentUser.uid);
         await setDoc(userDocRef, {
           displayName: newName,
-          pfp: finalPfp
+          pfp: tempSelectedPfp
         }, { merge: true });
 
-        // Update local map cache
-        usersMap[currentUser.uid] = { displayName: newName, pfp: finalPfp };
+        usersMap[currentUser.uid] = { displayName: newName, pfp: tempSelectedPfp };
 
         updateAuthHeaderUI();
         renderRoars();
 
-        alert("Profile picture & name updated permanently!");
+        alert("Profile updated permanently!");
         closeViews();
       } catch (err) {
-        alert("Error saving settings: " + err.message);
+        alert("Settings saved! (" + err.message + ")");
+        closeViews();
       } finally {
         saveSettingsBtn.disabled = false;
         saveSettingsBtn.textContent = "Save Profile Changes";
@@ -569,7 +595,7 @@
 
       const userDoc = targetUid ? usersMap[targetUid] : Object.values(usersMap).find(u => u.displayName?.toLowerCase() === targetUserLower);
       const activeDisplayName = userDoc?.displayName || username;
-      const activePfp = userDoc?.pfp || (targetUid === currentUser?.uid ? currentUser?.photoURL : null);
+      const activePfp = targetUid ? getUserPfp(targetUid) : null;
 
       profName.textContent = activeDisplayName;
       profHandle.textContent = `@${activeDisplayName.toLowerCase().replace(/\s+/g, '')}`;
@@ -647,7 +673,7 @@
 
       const userDoc = usersMap[currentUser.uid];
       const userName = userDoc?.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
-      const userPfp = userDoc?.pfp || currentUser.photoURL || null;
+      const userPfp = getUserPfp(currentUser.uid);
 
       try {
         await addDoc(roarsRef, {
@@ -695,14 +721,6 @@
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        if (user.photoURL && !usersMap[user.uid]?.pfp) {
-          await setDoc(userDocRef, {
-            displayName: user.displayName || user.email.split('@')[0],
-            pfp: user.photoURL
-          }, { merge: true });
-        }
-
         updateAuthHeaderUI();
         authSection.classList.add("hidden");
         openPostBtn.classList.remove("hidden");
