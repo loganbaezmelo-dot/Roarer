@@ -269,6 +269,12 @@
       arrayRemove 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // Disable automatic browser scroll restoration & force top load
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+
     const keyPart1 = "AIzaSyAj1k-";
     const keyPart2 = "Z70v0OK9w0hjvCfMi35p6CbqApis";
 
@@ -425,13 +431,14 @@
       roarForm.classList.toggle("hidden");
     };
 
-    // View Navigation
+    // View Navigation with Top Scroll Reset
     window.openForgotView = function() {
       mainFeedView.classList.add("hidden");
       profileView.classList.add("hidden");
       settingsView.classList.add("hidden");
       forgotView.classList.remove("hidden");
       resetNotice.classList.add("hidden");
+      window.scrollTo(0, 0);
     };
 
     window.openSettingsView = function() {
@@ -445,6 +452,7 @@
       settingsNameInput.value = currentName;
       tempSelectedPfp = currentUser.photoURL || null;
       settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
+      window.scrollTo(0, 0);
     };
 
     // File Upload Handler for Local Photo Selection
@@ -459,7 +467,7 @@
 
       const reader = new FileReader();
       reader.onload = function(event) {
-        tempSelectedPfp = event.target.result; // Base64 Data URL
+        tempSelectedPfp = event.target.result;
         settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
       };
       reader.readAsDataURL(file);
@@ -477,7 +485,6 @@
           photoURL: tempSelectedPfp || null
         });
 
-        // Refresh Auth UI
         userStatus.innerHTML = `
           ${getAvatarHTML(currentUser.photoURL, "w-5 h-5 text-[10px]")}
           <span>${currentUser.displayName}</span>
@@ -506,7 +513,6 @@
       profHandle.textContent = `@${username.toLowerCase().replace(/\s+/g, '')}`;
       profRoarCount.textContent = userRoars.length;
 
-      // Find user photo
       const userPost = roars.find(r => (r.uid === targetUid || r.user.toLowerCase() === targetUserLower) && r.userPfp);
       const photoURL = userPost ? userPost.userPfp : (targetUid === currentUser?.uid ? currentUser?.photoURL : null);
       profileAvatarContainer.innerHTML = getAvatarHTML(photoURL, "w-full h-full text-3xl");
@@ -539,6 +545,7 @@
       forgotView.classList.add("hidden");
       settingsView.classList.add("hidden");
       profileView.classList.remove("hidden");
+      window.scrollTo(0, 0);
     };
 
     window.openMyProfile = function() {
@@ -552,6 +559,7 @@
       forgotView.classList.add("hidden");
       settingsView.classList.add("hidden");
       mainFeedView.classList.remove("hidden");
+      window.scrollTo(0, 0);
     };
 
     // Password Reset Action
@@ -569,7 +577,7 @@
       }
     });
 
-    // Create Roar in Firestore (Attaches current user photoURL)
+    // Create Roar in Firestore
     roarForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = roarInput.value.trim();
@@ -642,6 +650,7 @@
         closeViews();
       }
       renderRoars();
+      window.scrollTo(0, 0);
     });
 
     logoutBtn.addEventListener("click", () => signOut(auth));
