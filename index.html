@@ -15,7 +15,7 @@
   <main class="w-full max-w-md border-x border-slate-900 min-h-screen flex flex-col bg-slate-950 relative">
     <!-- Header -->
     <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 py-3 flex items-center justify-between">
-      <h1 class="text-xl font-black tracking-wider text-emerald-400 flex items-center gap-1.5 cursor-pointer" onclick="closeProfile()">
+      <h1 class="text-xl font-black tracking-wider text-emerald-400 flex items-center gap-1.5 cursor-pointer" onclick="closeViews()">
         🦖 ROARER
       </h1>
       <button id="userStatus" onclick="openMyProfile()" class="text-xs font-mono bg-emerald-950/80 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition">
@@ -32,6 +32,7 @@
           <p class="text-xs text-slate-400">Sign in to share your thoughts with the world</p>
         </div>
         
+        <!-- Google Sign-In -->
         <button
           id="googleBtn"
           class="w-full bg-slate-100 hover:bg-white text-slate-950 font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
@@ -80,18 +81,11 @@
         </div>
 
         <button
-          id="sendLinkBtn"
+          onclick="openForgotView()"
           class="w-full text-xs text-slate-400 hover:text-emerald-400 underline text-center pt-2 block transition"
         >
-          Send Passwordless Magic Link Instead
+          Forgot your password?
         </button>
-
-        <div id="spamNotice" class="hidden mt-3 p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-300 space-y-1">
-          <p class="font-bold flex items-center gap-1">📩 Check your inbox & spam folder!</p>
-          <p class="text-[11px] text-amber-200/80 leading-relaxed">
-            Email apps like Gmail think that we are spam, check your spam folder to see the passwordless email.
-          </p>
-        </div>
       </div>
 
       <!-- Create Roar Form -->
@@ -131,9 +125,39 @@
       <div id="feed" class="space-y-3"></div>
     </div>
 
+    <!-- Forgot Password View -->
+    <div id="forgotView" class="hidden p-4 flex-1">
+      <button onclick="closeViews()" class="mb-3 text-xs text-emerald-400 hover:underline flex items-center gap-1">
+        ← Back to Login
+      </button>
+
+      <div class="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-3 shadow-xl">
+        <h2 class="text-lg font-bold text-slate-100">Reset Your Password 🔒</h2>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          Enter your account email address below and we'll send you a link to reset your password.
+        </p>
+
+        <input
+          type="email"
+          id="resetEmailInput"
+          placeholder="Enter your email address"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+        />
+
+        <button
+          id="sendResetBtn"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/10"
+        >
+          Send Reset Link
+        </button>
+
+        <p id="resetNotice" class="hidden text-xs text-emerald-400 pt-1 text-center font-medium"></p>
+      </div>
+    </div>
+
     <!-- Profile View Screen -->
     <div id="profileView" class="hidden p-4 flex-1">
-      <button onclick="closeProfile()" class="mb-3 text-xs text-emerald-400 hover:underline flex items-center gap-1">
+      <button onclick="closeViews()" class="mb-3 text-xs text-emerald-400 hover:underline flex items-center gap-1">
         ← Back to Feed
       </button>
 
@@ -168,9 +192,7 @@
       signInWithPopup, 
       createUserWithEmailAndPassword, 
       signInWithEmailAndPassword,
-      sendSignInLinkToEmail,
-      isSignInWithEmailLink,
-      signInWithEmailLink,
+      sendPasswordResetEmail,
       onAuthStateChanged,
       signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -202,8 +224,6 @@
     const googleBtn = document.getElementById("googleBtn");
     const loginBtn = document.getElementById("loginBtn");
     const signupBtn = document.getElementById("signupBtn");
-    const sendLinkBtn = document.getElementById("sendLinkBtn");
-    const spamNotice = document.getElementById("spamNotice");
     const emailInput = document.getElementById("emailInput");
     const passInput = document.getElementById("passInput");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -211,8 +231,14 @@
     const roarInput = document.getElementById("roarInput");
     const mediaInput = document.getElementById("mediaInput");
 
+    // Views
     const mainFeedView = document.getElementById("mainFeedView");
     const profileView = document.getElementById("profileView");
+    const forgotView = document.getElementById("forgotView");
+    const resetEmailInput = document.getElementById("resetEmailInput");
+    const sendResetBtn = document.getElementById("sendResetBtn");
+    const resetNotice = document.getElementById("resetNotice");
+
     const profName = document.getElementById("profName");
     const profHandle = document.getElementById("profHandle");
     const profRoarCount = document.getElementById("profRoarCount");
@@ -280,7 +306,14 @@
       });
     }
 
-    // Profile Page Nav Logic
+    // View Navigation
+    window.openForgotView = function() {
+      mainFeedView.classList.add("hidden");
+      profileView.classList.add("hidden");
+      forgotView.classList.remove("hidden");
+      resetNotice.classList.add("hidden");
+    };
+
     window.openUserProfile = function(username) {
       const userRoars = roars.filter(r => r.user === username);
       profName.textContent = username;
@@ -300,6 +333,7 @@
       }
 
       mainFeedView.classList.add("hidden");
+      forgotView.classList.add("hidden");
       profileView.classList.remove("hidden");
     };
 
@@ -309,10 +343,26 @@
       openUserProfile(userName);
     };
 
-    window.closeProfile = function() {
+    window.closeViews = function() {
       profileView.classList.add("hidden");
+      forgotView.classList.add("hidden");
       mainFeedView.classList.remove("hidden");
     };
+
+    // Password Reset Action
+    sendResetBtn.addEventListener("click", async () => {
+      const email = resetEmailInput.value.trim();
+      if (!email) return alert("Please enter your email address!");
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        resetNotice.textContent = "Password reset email sent! Check your inbox (and spam folder).";
+        resetNotice.classList.remove("hidden");
+        resetEmailInput.value = "";
+      } catch (err) {
+        alert("Error sending reset email: " + err.message);
+      }
+    });
 
     // Form Submit
     roarForm.addEventListener("submit", (e) => {
@@ -364,26 +414,6 @@
       catch (err) { alert("Login Error: " + err.message); }
     });
 
-    const actionCodeSettings = { url: window.location.href, handleCodeInApp: true };
-
-    sendLinkBtn.addEventListener("click", async () => {
-      const email = emailInput.value.trim();
-      if (!email) return alert("Enter your email first!");
-      try {
-        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-        window.localStorage.setItem('emailForSignIn', email);
-        spamNotice.classList.remove("hidden");
-      } catch (err) { alert("Magic Link Error: " + err.message); }
-    });
-
-    if (isSignInWithEmailLink(auth, window.location.href)) {
-      let email = window.localStorage.getItem('emailForSignIn');
-      if (!email) email = window.prompt('Confirm your email:');
-      signInWithEmailLink(auth, email, window.location.href)
-        .then(() => window.localStorage.removeItem('emailForSignIn'))
-        .catch((err) => alert("Sign-in error: " + err.message));
-    }
-
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       if (user) {
@@ -394,7 +424,7 @@
         userStatus.textContent = "Logged Out";
         authSection.classList.remove("hidden");
         roarForm.classList.add("hidden");
-        closeProfile();
+        closeViews();
       }
       renderRoars();
     });
