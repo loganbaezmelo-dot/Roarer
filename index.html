@@ -294,7 +294,7 @@
     const googleProvider = new GoogleAuthProvider();
 
     let roars = [];
-    let usersMap = {}; // Central source of truth for all user profiles
+    let usersMap = {};
     let currentUser = null;
     let activeProfileTargetUid = null;
     let tempSelectedPfp = null;
@@ -335,13 +335,12 @@
     const settingsNameInput = document.getElementById("settingsNameInput");
     const saveSettingsBtn = document.getElementById("saveSettingsBtn");
 
-    // 1. Real-time Users Collection Listener (Source of Truth)
+    // Real-time Users Listener
     onSnapshot(collection(db, "users"), (snapshot) => {
       snapshot.docs.forEach(d => {
         usersMap[d.id] = d.data();
       });
 
-      // Refresh UI with latest user data
       if (currentUser) updateAuthHeaderUI();
       renderRoars();
       if (!profileView.classList.contains("hidden")) {
@@ -349,7 +348,7 @@
       }
     });
 
-    // 2. Real-Time Global Feed Listener
+    // Real-Time Feed Listener
     const roarsRef = collection(db, "roars");
     const roarsQuery = query(roarsRef, orderBy("createdAt", "desc"));
 
@@ -365,7 +364,7 @@
       }
     });
 
-    // Helper: Image Compressor
+    // Compress uploaded image safely for Firestore
     function compressImage(file, maxWidth, quality, callback) {
       const reader = new FileReader();
       reader.onload = function(event) {
@@ -392,7 +391,6 @@
       reader.readAsDataURL(file);
     }
 
-    // Helper: Render Avatar HTML
     function getAvatarHTML(photoURL, sizeClasses = "w-9 h-9 text-base") {
       if (photoURL) {
         return `<img src="${photoURL}" alt="Avatar" class="${sizeClasses} rounded-full object-cover border border-emerald-500/30" onerror="this.outerHTML='<div class=\\'${sizeClasses} rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black\\'>🦖</div>'" />`;
@@ -400,7 +398,6 @@
       return `<div class="${sizeClasses} rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black">🦖</div>`;
     }
 
-    // Dynamic Header PFP Update
     function updateAuthHeaderUI() {
       if (!currentUser) return;
       const userDoc = usersMap[currentUser.uid];
@@ -448,7 +445,6 @@
         const hasLiked = currentUser && likedBy.includes(currentUser.uid);
         const hasEchoed = currentUser && echoedBy.includes(currentUser.uid);
 
-        // Fetch dynamic PFP and Name from usersMap if available
         const authorDoc = usersMap[roar.uid];
         const displayPfp = authorDoc?.pfp || roar.userPfp;
         const displayName = authorDoc?.displayName || roar.user;
@@ -486,12 +482,10 @@
       });
     }
 
-    // Toggle Collapsible Composer
     window.toggleRoarComposer = function() {
       roarForm.classList.toggle("hidden");
     };
 
-    // View Navigation
     window.openForgotView = function() {
       mainFeedView.classList.add("hidden");
       profileView.classList.add("hidden");
@@ -516,41 +510,52 @@
       window.scrollTo(0, 0);
     };
 
-    // File Upload Handler
     pfpFileInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      compressImage(file, 120, 0.7, (compressedDataUrl) => {
+      compressImage(file, 100, 0.6, (compressedDataUrl) => {
         tempSelectedPfp = compressedDataUrl;
         settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
       });
     });
 
-    // Save Settings Button
+    // Save Settings Button (Writes PFP permanently to Firestore User Doc)
     saveSettingsBtn.addEventListener("click", async () => {
       if (!currentUser) return;
       const newName = settingsNameInput.value.trim();
       if (!newName) return alert("Please enter a valid display name!");
 
+      saveSettingsBtn.disabled = true;
+      saveSettingsBtn.textContent = "Saving...";
+
       try {
         await updateProfile(currentUser, { displayName: newName });
+
+        const finalPfp = tempSelectedPfp || usersMap[currentUser.uid]?.pfp || currentUser.photoURL || null;
 
         const userDocRef = doc(db, "users", currentUser.uid);
         await setDoc(userDocRef, {
           displayName: newName,
-          pfp: tempSelectedPfp || currentUser.photoURL || null
+          pfp: finalPfp
         }, { merge: true });
 
+        // Update local map cache
+        usersMap[currentUser.uid] = { displayName: newName, pfp: finalPfp };
+
         updateAuthHeaderUI();
-        alert("Profile updated successfully!");
+        renderRoars();
+
+        alert("Profile picture & name updated permanently!");
         closeViews();
       } catch (err) {
         alert("Error saving settings: " + err.message);
+      } finally {
+        saveSettingsBtn.disabled = false;
+        saveSettingsBtn.textContent = "Save Profile Changes";
       }
     });
 
-    // Profile View Matching
     window.openUserProfile = function(username, targetUid) {
       activeProfileTargetUid = targetUid || null;
       const targetUserLower = username.toLowerCase();
@@ -562,7 +567,6 @@
         return isAuthored || isEchoed;
       });
 
-      // Get latest dynamic info from usersMap
       const userDoc = targetUid ? usersMap[targetUid] : Object.values(usersMap).find(u => u.displayName?.toLowerCase() === targetUserLower);
       const activeDisplayName = userDoc?.displayName || username;
       const activePfp = userDoc?.pfp || (targetUid === currentUser?.uid ? currentUser?.photoURL : null);
@@ -621,7 +625,6 @@
       window.scrollTo(0, 0);
     };
 
-    // Password Reset Action
     sendResetBtn.addEventListener("click", async () => {
       const email = resetEmailInput.value.trim();
       if (!email) return alert("Please enter your email address!");
@@ -636,7 +639,6 @@
       }
     });
 
-    // Create Roar in Firestore
     roarForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = roarInput.value.trim();
@@ -669,7 +671,6 @@
       }
     });
 
-    // Auth Actions
     googleBtn.addEventListener("click", async () => {
       try { await signInWithPopup(auth, googleProvider); } 
       catch (err) { alert("Google Error: " + err.message); }
@@ -694,7 +695,6 @@
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
-        // Save initial Google or Email account data to users collection if new
         const userDocRef = doc(db, "users", user.uid);
         if (user.photoURL && !usersMap[user.uid]?.pfp) {
           await setDoc(userDocRef, {
@@ -721,7 +721,6 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Toggle Like
     window.toggleLike = async function(docId) {
       if (!currentUser) return alert("Sign in to impact Roars!");
       const roarDoc = doc(db, "roars", docId);
@@ -735,7 +734,6 @@
       }
     };
 
-    // Toggle Echo
     window.toggleEcho = async function(docId) {
       if (!currentUser) return alert("Sign in to echo Roars!");
       const roarDoc = doc(db, "roars", docId);
