@@ -12,32 +12,33 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center pb-20 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
 
-  <main class="w-full max-w-md border-x border-slate-900 min-h-screen flex flex-col bg-slate-950 relative">
+  <!-- Responsive Container: Expands cleanly on desktop (md/lg) while staying compact on mobile -->
+  <main class="w-full max-w-md md:max-w-2xl lg:max-w-3xl md:border-x border-slate-900 min-h-screen flex flex-col bg-slate-950 relative shadow-2xl">
     <!-- Header -->
-    <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 py-3 flex items-center justify-between">
-      <h1 class="text-xl font-black tracking-wider text-emerald-400 flex items-center gap-1.5 cursor-pointer" onclick="closeViews()">
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 md:px-6 py-3.5 flex items-center justify-between">
+      <h1 class="text-xl md:text-2xl font-black tracking-wider text-emerald-400 flex items-center gap-2 cursor-pointer" onclick="closeViews()">
         🦖 ROARER
       </h1>
-      <button id="userStatus" onclick="openMyProfile()" class="text-xs font-mono bg-emerald-950/80 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition">
+      <button id="userStatus" onclick="openMyProfile()" class="text-xs md:text-sm font-mono bg-emerald-950/80 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition">
         Checking Auth...
       </button>
     </header>
 
     <!-- Main View Area -->
-    <div id="mainFeedView" class="p-4 flex-1">
+    <div id="mainFeedView" class="p-4 md:p-6 flex-1">
       <!-- Auth Screen -->
-      <div id="authSection" class="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-3.5 shadow-xl">
+      <div id="authSection" class="p-5 md:p-8 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-4 shadow-xl max-w-md mx-auto">
         <div class="text-center pb-1">
-          <h2 class="text-lg font-bold text-slate-100">Welcome to Roarer 🦖</h2>
-          <p class="text-xs text-slate-400">Sign in to share your thoughts with the world</p>
+          <h2 class="text-lg md:text-xl font-bold text-slate-100">Welcome to Roarer 🦖</h2>
+          <p class="text-xs md:text-sm text-slate-400">Sign in to share your thoughts with the world</p>
         </div>
         
         <!-- Google Sign-In -->
         <button
           id="googleBtn"
-          class="w-full bg-slate-100 hover:bg-white text-slate-950 font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
+          class="w-full bg-slate-100 hover:bg-white text-slate-950 font-bold py-2.5 rounded-xl text-sm md:text-base flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 md:w-5 md:h-5" viewBox="0 0 24 24">
             <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
             <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/>
             <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.09z"/>
@@ -56,25 +57,25 @@
           type="email"
           id="emailInput"
           placeholder="Email address"
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
         />
         <input
           type="password"
           id="passInput"
           placeholder="Password"
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
         />
 
         <div class="flex gap-2 pt-1">
           <button
             id="loginBtn"
-            class="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/10"
+            class="flex-1 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold py-2.5 rounded-xl text-sm md:text-base transition shadow-lg shadow-emerald-500/10 cursor-pointer"
           >
             Log In
           </button>
           <button
             id="signupBtn"
-            class="flex-1 border border-slate-700 hover:border-emerald-500 active:scale-95 text-slate-200 font-bold py-2.5 rounded-xl text-sm transition"
+            class="flex-1 border border-slate-700 hover:border-emerald-500 active:scale-95 text-slate-200 font-bold py-2.5 rounded-xl text-sm md:text-base transition cursor-pointer"
           >
             Sign Up
           </button>
@@ -82,18 +83,18 @@
 
         <button
           onclick="openForgotView()"
-          class="w-full text-xs text-slate-400 hover:text-emerald-400 underline text-center pt-2 block transition"
+          class="w-full text-xs md:text-sm text-slate-400 hover:text-emerald-400 underline text-center pt-2 block transition cursor-pointer"
         >
           Forgot your password?
         </button>
       </div>
 
       <!-- Create Roar Form -->
-      <form id="roarForm" class="mb-6 p-4 bg-slate-900/40 border border-slate-800/80 rounded-2xl hidden shadow-lg">
+      <form id="roarForm" class="mb-6 p-4 md:p-5 bg-slate-900/40 border border-slate-800/80 rounded-2xl hidden shadow-lg">
         <textarea
           id="roarInput"
           placeholder="ROAR YOUR THOUGHTS!! 🦖"
-          class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none h-20 mb-2 transition"
+          class="w-full bg-slate-950/80 border border-slate-800 rounded-xl p-3 md:p-4 text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 resize-none h-24 mb-2 transition"
           required
         ></textarea>
 
@@ -101,20 +102,20 @@
           type="url"
           id="mediaInput"
           placeholder="Optional Image/Video URL..."
-          class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 mb-3 transition"
+          class="w-full bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 mb-3 transition"
         />
 
         <div class="flex justify-between items-center">
           <button
             type="button"
             id="logoutBtn"
-            class="text-xs text-slate-500 hover:text-red-400 font-medium px-1 transition"
+            class="text-xs md:text-sm text-slate-500 hover:text-red-400 font-medium px-1 transition cursor-pointer"
           >
             Sign Out
           </button>
           <button
             type="submit"
-            class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20"
+            class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-6 py-2.5 rounded-full text-xs md:text-sm transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20 cursor-pointer"
           >
             <span>ROAR 🦖</span>
           </button>
@@ -122,18 +123,18 @@
       </form>
 
       <!-- Feed List -->
-      <div id="feed" class="space-y-3"></div>
+      <div id="feed" class="space-y-4"></div>
     </div>
 
     <!-- Forgot Password View -->
-    <div id="forgotView" class="hidden p-4 flex-1">
-      <button onclick="closeViews()" class="mb-3 text-xs text-emerald-400 hover:underline flex items-center gap-1">
+    <div id="forgotView" class="hidden p-4 md:p-6 flex-1">
+      <button onclick="closeViews()" class="mb-4 text-xs md:text-sm text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
         ← Back to Login
       </button>
 
-      <div class="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-3 shadow-xl">
-        <h2 class="text-lg font-bold text-slate-100">Reset Your Password 🔒</h2>
-        <p class="text-xs text-slate-400 leading-relaxed">
+      <div class="p-5 md:p-8 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-4 shadow-xl max-w-md mx-auto">
+        <h2 class="text-lg md:text-xl font-bold text-slate-100">Reset Your Password 🔒</h2>
+        <p class="text-xs md:text-sm text-slate-400 leading-relaxed">
           Enter your account email address below and we'll send you a link to reset your password.
         </p>
 
@@ -141,44 +142,44 @@
           type="email"
           id="resetEmailInput"
           placeholder="Enter your email address"
-          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
+          class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm md:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition"
         />
 
         <button
           id="sendResetBtn"
-          class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/10"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold py-2.5 rounded-xl text-sm md:text-base transition shadow-lg shadow-emerald-500/10 cursor-pointer"
         >
           Send Reset Link
         </button>
 
-        <p id="resetNotice" class="hidden text-xs text-emerald-400 pt-1 text-center font-medium"></p>
+        <p id="resetNotice" class="hidden text-xs md:text-sm text-emerald-400 pt-1 text-center font-medium"></p>
       </div>
     </div>
 
     <!-- Profile View Screen -->
-    <div id="profileView" class="hidden p-4 flex-1">
-      <button onclick="closeViews()" class="mb-3 text-xs text-emerald-400 hover:underline flex items-center gap-1">
+    <div id="profileView" class="hidden p-4 md:p-6 flex-1">
+      <button onclick="closeViews()" class="mb-4 text-xs md:text-sm text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
         ← Back to Feed
       </button>
 
-      <div class="p-5 bg-slate-900/80 border border-slate-800 rounded-2xl text-center mb-6 shadow-xl relative overflow-hidden">
-        <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center text-2xl mx-auto mb-2 font-black">
+      <div class="p-6 md:p-8 bg-slate-900/80 border border-slate-800 rounded-2xl text-center mb-6 shadow-xl relative overflow-hidden">
+        <div class="w-16 h-16 md:w-20 md:h-20 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center text-2xl md:text-3xl mx-auto mb-3 font-black">
           🦖
         </div>
-        <h2 id="profName" class="text-lg font-bold text-slate-100">User</h2>
-        <p id="profHandle" class="text-xs text-slate-400 mb-3">@handle</p>
-        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
+        <h2 id="profName" class="text-lg md:text-xl font-bold text-slate-100">User</h2>
+        <p id="profHandle" class="text-xs md:text-sm text-slate-400 mb-3">@handle</p>
+        <span class="text-[10px] md:text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
           🦖 Verified Roarer
         </span>
 
-        <div class="flex justify-center gap-6 mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400">
+        <div class="flex justify-center gap-6 mt-5 pt-4 border-t border-slate-800/80 text-xs md:text-sm text-slate-400">
           <div>
             <span id="profRoarCount" class="font-bold text-slate-100">0</span> Roars
           </div>
         </div>
       </div>
 
-      <h3 class="text-xs font-mono text-slate-500 mb-3 uppercase tracking-wider">User's Roars</h3>
+      <h3 class="text-xs md:text-sm font-mono text-slate-500 mb-3 uppercase tracking-wider">User's Roars</h3>
       <div id="profileFeed" class="space-y-3"></div>
     </div>
   </main>
@@ -274,8 +275,8 @@
 
       if (roars.length === 0) {
         feedContainer.innerHTML = `
-          <div class="text-center py-12 text-slate-500">
-            <p class="text-sm">No Roars yet! ROAR YOUR THOUGHTS!! 🦖</p>
+          <div class="text-center py-16 text-slate-500">
+            <p class="text-base md:text-lg font-medium">No Roars yet! ROAR YOUR THOUGHTS!! 🦖</p>
           </div>
         `;
         return;
@@ -283,42 +284,42 @@
 
       roars.forEach(roar => {
         const roarCard = document.createElement("div");
-        roarCard.className = "p-4 bg-slate-900/50 border border-slate-800/80 rounded-2xl hover:border-slate-700/80 transition relative shadow-sm";
+        roarCard.className = "p-4 md:p-5 bg-slate-900/50 border border-slate-800/80 rounded-2xl hover:border-slate-700/80 transition relative shadow-sm";
         
         let mediaHTML = "";
         if (roar.media) {
           if (roar.media.match(/\.(mp4|webm|ogg)$/i)) {
-            mediaHTML = `<video src="${roar.media}" controls class="w-full rounded-xl mt-3 max-h-72 object-cover border border-slate-800"></video>`;
+            mediaHTML = `<video src="${roar.media}" controls class="w-full rounded-xl mt-3 max-h-96 object-cover border border-slate-800"></video>`;
           } else {
-            mediaHTML = `<img src="${roar.media}" alt="Roar media" class="w-full rounded-xl mt-3 max-h-72 object-cover border border-slate-800" onerror="this.style.display='none'" />`;
+            mediaHTML = `<img src="${roar.media}" alt="Roar media" class="w-full rounded-xl mt-3 max-h-96 object-cover border border-slate-800" onerror="this.style.display='none'" />`;
           }
         }
 
         const isOwner = currentUser && roar.uid === currentUser.uid;
         const deleteBtnHTML = isOwner 
-          ? `<button onclick="deleteRoar('${roar.id}')" class="text-slate-600 hover:text-red-400 text-xs p-1 transition">✕</button>` 
+          ? `<button onclick="deleteRoar('${roar.id}')" class="text-slate-600 hover:text-red-400 text-xs p-1 transition cursor-pointer">✕</button>` 
           : '';
 
         roarCard.innerHTML = `
           <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center gap-1.5 overflow-hidden cursor-pointer" onclick="openUserProfile('${roar.user}')">
-              <span class="font-bold text-slate-200 text-sm truncate hover:text-emerald-400 transition">${roar.user}</span>
-              <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+            <div class="flex items-center gap-2 overflow-hidden cursor-pointer" onclick="openUserProfile('${roar.user}')">
+              <span class="font-bold text-slate-200 text-sm md:text-base truncate hover:text-emerald-400 transition">${roar.user}</span>
+              <span class="text-[10px] md:text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
                 🦖 Verified
               </span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
-              <span class="text-[11px] text-slate-500">${roar.timestamp}</span>
+              <span class="text-[11px] md:text-xs text-slate-500">${roar.timestamp}</span>
               ${deleteBtnHTML}
             </div>
           </div>
-          <p class="text-slate-300 text-sm my-2 whitespace-pre-wrap leading-relaxed">${roar.content}</p>
+          <p class="text-slate-300 text-sm md:text-base my-2 whitespace-pre-wrap leading-relaxed">${roar.content}</p>
           ${mediaHTML}
-          <div class="flex gap-6 mt-3 text-xs text-slate-400 pt-1 border-t border-slate-800/40">
-            <button onclick="echoRoar('${roar.id}')" class="hover:text-emerald-400 flex items-center gap-1 transition active:scale-95">
+          <div class="flex gap-6 mt-4 text-xs md:text-sm text-slate-400 pt-2 border-t border-slate-800/40">
+            <button onclick="echoRoar('${roar.id}')" class="hover:text-emerald-400 flex items-center gap-1.5 transition active:scale-95 cursor-pointer">
               🔁 ${roar.echos || 0} Echoes
             </button>
-            <button onclick="likeRoar('${roar.id}')" class="hover:text-red-400 flex items-center gap-1 transition active:scale-95">
+            <button onclick="likeRoar('${roar.id}')" class="hover:text-red-400 flex items-center gap-1.5 transition active:scale-95 cursor-pointer">
               🔥 ${roar.likes || 0} Impact
             </button>
           </div>
@@ -343,12 +344,12 @@
 
       profileFeed.innerHTML = "";
       if (userRoars.length === 0) {
-        profileFeed.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No Roars from this user yet.</p>`;
+        profileFeed.innerHTML = `<p class="text-xs md:text-sm text-slate-500 text-center py-6">No Roars from this user yet.</p>`;
       } else {
         userRoars.forEach(r => {
           const card = document.createElement("div");
-          card.className = "p-3 bg-slate-900/40 border border-slate-800/60 rounded-xl text-xs text-slate-300";
-          card.innerHTML = `<p class="whitespace-pre-wrap">${r.content}</p><span class="text-[10px] text-slate-500 mt-1 block">${r.timestamp}</span>`;
+          card.className = "p-3.5 bg-slate-900/40 border border-slate-800/60 rounded-xl text-xs md:text-sm text-slate-300";
+          card.innerHTML = `<p class="whitespace-pre-wrap">${r.content}</p><span class="text-[10px] md:text-xs text-slate-500 mt-1 block">${r.timestamp}</span>`;
           profileFeed.appendChild(card);
         });
       }
