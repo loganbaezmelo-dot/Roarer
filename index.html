@@ -260,7 +260,6 @@
       collection, 
       addDoc, 
       setDoc,
-      getDoc,
       onSnapshot, 
       query, 
       orderBy, 
@@ -295,8 +294,8 @@
     const googleProvider = new GoogleAuthProvider();
 
     let roars = [];
+    let usersMap = {}; // Central source of truth for all user profiles
     let currentUser = null;
-    let currentUserPfp = null;
     let activeProfileTargetUid = null;
     let tempSelectedPfp = null;
 
@@ -336,7 +335,21 @@
     const settingsNameInput = document.getElementById("settingsNameInput");
     const saveSettingsBtn = document.getElementById("saveSettingsBtn");
 
-    // Firestore Real-Time Global Feed Listener
+    // 1. Real-time Users Collection Listener (Source of Truth)
+    onSnapshot(collection(db, "users"), (snapshot) => {
+      snapshot.docs.forEach(d => {
+        usersMap[d.id] = d.data();
+      });
+
+      // Refresh UI with latest user data
+      if (currentUser) updateAuthHeaderUI();
+      renderRoars();
+      if (!profileView.classList.contains("hidden")) {
+        openUserProfile(profName.textContent, activeProfileTargetUid);
+      }
+    });
+
+    // 2. Real-Time Global Feed Listener
     const roarsRef = collection(db, "roars");
     const roarsQuery = query(roarsRef, orderBy("createdAt", "desc"));
 
@@ -387,6 +400,19 @@
       return `<div class="${sizeClasses} rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black">🦖</div>`;
     }
 
+    // Dynamic Header PFP Update
+    function updateAuthHeaderUI() {
+      if (!currentUser) return;
+      const userDoc = usersMap[currentUser.uid];
+      const name = userDoc?.displayName || currentUser.displayName || currentUser.email.split('@')[0];
+      const pfp = userDoc?.pfp || currentUser.photoURL || null;
+
+      userStatus.innerHTML = `
+        ${getAvatarHTML(pfp, "w-5 h-5 text-[10px]")}
+        <span>${name}</span>
+      `;
+    }
+
     function renderRoars() {
       feedContainer.innerHTML = "";
 
@@ -422,14 +448,19 @@
         const hasLiked = currentUser && likedBy.includes(currentUser.uid);
         const hasEchoed = currentUser && echoedBy.includes(currentUser.uid);
 
-        const pfpHTML = getAvatarHTML(roar.userPfp, "w-8 h-8 md:w-9 md:h-9 text-xs");
+        // Fetch dynamic PFP and Name from usersMap if available
+        const authorDoc = usersMap[roar.uid];
+        const displayPfp = authorDoc?.pfp || roar.userPfp;
+        const displayName = authorDoc?.displayName || roar.user;
+
+        const pfpHTML = getAvatarHTML(displayPfp, "w-8 h-8 md:w-9 md:h-9 text-xs");
 
         roarCard.innerHTML = `
           <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center gap-2 overflow-hidden cursor-pointer" onclick="openUserProfile('${roar.user}', '${roar.uid}')">
+            <div class="flex items-center gap-2 overflow-hidden cursor-pointer" onclick="openUserProfile('${displayName}', '${roar.uid}')">
               ${pfpHTML}
               <div class="flex items-center gap-1.5 overflow-hidden">
-                <span class="font-bold text-slate-200 text-sm md:text-base truncate hover:text-emerald-400 transition">${roar.user}</span>
+                <span class="font-bold text-slate-200 text-sm md:text-base truncate hover:text-emerald-400 transition">${displayName}</span>
                 <span class="text-[10px] md:text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
                   🦖 Verified
                 </span>
@@ -477,9 +508,10 @@
       forgotView.classList.add("hidden");
       settingsView.classList.remove("hidden");
 
-      const currentName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
+      const userDoc = usersMap[currentUser.uid];
+      const currentName = userDoc?.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
       settingsNameInput.value = currentName;
-      tempSelectedPfp = currentUserPfp || currentUser.photoURL || null;
+      tempSelectedPfp = userDoc?.pfp || currentUser.photoURL || null;
       settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
       window.scrollTo(0, 0);
     };
@@ -495,30 +527,22 @@
       });
     });
 
-    // Save Settings Button (Saves to Firestore Document instead of Auth photoURL!)
+    // Save Settings Button
     saveSettingsBtn.addEventListener("click", async () => {
       if (!currentUser) return;
       const newName = settingsNameInput.value.trim();
       if (!newName) return alert("Please enter a valid display name!");
 
       try {
-        // Update Auth Display Name safely
         await updateProfile(currentUser, { displayName: newName });
 
-        // Save PFP inside Firestore User Doc
         const userDocRef = doc(db, "users", currentUser.uid);
         await setDoc(userDocRef, {
           displayName: newName,
           pfp: tempSelectedPfp || currentUser.photoURL || null
         }, { merge: true });
 
-        currentUserPfp = tempSelectedPfp || currentUser.photoURL || null;
-
-        userStatus.innerHTML = `
-          ${getAvatarHTML(currentUserPfp, "w-5 h-5 text-[10px]")}
-          <span>${newName}</span>
-        `;
-
+        updateAuthHeaderUI();
         alert("Profile updated successfully!");
         closeViews();
       } catch (err) {
@@ -538,13 +562,15 @@
         return isAuthored || isEchoed;
       });
 
-      profName.textContent = username;
-      profHandle.textContent = `@${username.toLowerCase().replace(/\s+/g, '')}`;
-      profRoarCount.textContent = userRoars.length;
+      // Get latest dynamic info from usersMap
+      const userDoc = targetUid ? usersMap[targetUid] : Object.values(usersMap).find(u => u.displayName?.toLowerCase() === targetUserLower);
+      const activeDisplayName = userDoc?.displayName || username;
+      const activePfp = userDoc?.pfp || (targetUid === currentUser?.uid ? currentUser?.photoURL : null);
 
-      const userPost = roars.find(r => (r.uid === targetUid || r.user.toLowerCase() === targetUserLower) && r.userPfp);
-      const photoURL = userPost ? userPost.userPfp : (targetUid === currentUser?.uid ? currentUserPfp : null);
-      profileAvatarContainer.innerHTML = getAvatarHTML(photoURL, "w-full h-full text-3xl");
+      profName.textContent = activeDisplayName;
+      profHandle.textContent = `@${activeDisplayName.toLowerCase().replace(/\s+/g, '')}`;
+      profRoarCount.textContent = userRoars.length;
+      profileAvatarContainer.innerHTML = getAvatarHTML(activePfp, "w-full h-full text-3xl");
 
       profileFeed.innerHTML = "";
       if (userRoars.length === 0) {
@@ -554,14 +580,17 @@
           const isAuthored = (r.user && r.user.toLowerCase() === targetUserLower) || (targetUid && r.uid === targetUid);
           const badgeHTML = isAuthored 
             ? '' 
-            : `<div class="text-[10px] text-emerald-400 font-bold mb-1 flex items-center gap-1">🔁 Echoed by ${username}</div>`;
+            : `<div class="text-[10px] text-emerald-400 font-bold mb-1 flex items-center gap-1">🔁 Echoed by ${activeDisplayName}</div>`;
+
+          const authorDoc = usersMap[r.uid];
+          const postAuthorName = authorDoc?.displayName || r.user;
 
           const card = document.createElement("div");
           card.className = "p-3.5 bg-slate-900/40 border border-slate-800/60 rounded-xl text-xs md:text-sm text-slate-300";
           card.innerHTML = `
             ${badgeHTML}
             <div class="flex items-center justify-between text-slate-400 mb-1">
-              <span class="font-bold text-slate-200">${r.user}</span>
+              <span class="font-bold text-slate-200">${postAuthorName}</span>
               <span class="text-[10px]">${r.timestamp}</span>
             </div>
             <p class="whitespace-pre-wrap">${r.content}</p>
@@ -579,7 +608,8 @@
 
     window.openMyProfile = function() {
       if (!currentUser) return;
-      const userName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
+      const userDoc = usersMap[currentUser.uid];
+      const userName = userDoc?.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
       openUserProfile(userName, currentUser.uid);
     };
 
@@ -613,13 +643,15 @@
       const media = mediaInput.value.trim();
       if (!text || !currentUser) return;
 
-      const userName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
+      const userDoc = usersMap[currentUser.uid];
+      const userName = userDoc?.displayName || currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
+      const userPfp = userDoc?.pfp || currentUser.photoURL || null;
 
       try {
         await addDoc(roarsRef, {
           uid: currentUser.uid,
           user: userName,
-          userPfp: currentUserPfp || currentUser.photoURL || null,
+          userPfp: userPfp,
           handle: `@${userName.toLowerCase().replace(/\s+/g, '')}`,
           content: text,
           media: media || null,
@@ -662,28 +694,20 @@
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
-        // Load custom PFP from Firestore User Document if present
-        try {
-          const userDocSnap = await getDoc(doc(db, "users", user.uid));
-          if (userDocSnap.exists() && userDocSnap.data().pfp) {
-            currentUserPfp = userDocSnap.data().pfp;
-          } else {
-            currentUserPfp = user.photoURL || null;
-          }
-        } catch (e) {
-          currentUserPfp = user.photoURL || null;
+        // Save initial Google or Email account data to users collection if new
+        const userDocRef = doc(db, "users", user.uid);
+        if (user.photoURL && !usersMap[user.uid]?.pfp) {
+          await setDoc(userDocRef, {
+            displayName: user.displayName || user.email.split('@')[0],
+            pfp: user.photoURL
+          }, { merge: true });
         }
 
-        const name = user.displayName || user.email.split('@')[0];
-        userStatus.innerHTML = `
-          ${getAvatarHTML(currentUserPfp, "w-5 h-5 text-[10px]")}
-          <span>${name}</span>
-        `;
+        updateAuthHeaderUI();
         authSection.classList.add("hidden");
         openPostBtn.classList.remove("hidden");
         settingsBtn.classList.remove("hidden");
       } else {
-        currentUserPfp = null;
         userStatus.textContent = "Logged Out";
         authSection.classList.remove("hidden");
         openPostBtn.classList.add("hidden");
