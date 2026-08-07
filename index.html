@@ -12,16 +12,22 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center pb-20 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- Responsive Container: Expands cleanly on desktop (md/lg) while staying compact on mobile -->
+  <!-- Responsive Main Container -->
   <main class="w-full max-w-md md:max-w-2xl lg:max-w-3xl md:border-x border-slate-900 min-h-screen flex flex-col bg-slate-950 relative shadow-2xl">
-    <!-- Header -->
+    <!-- Sticky Glass Header -->
     <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 md:px-6 py-3.5 flex items-center justify-between">
       <h1 class="text-xl md:text-2xl font-black tracking-wider text-emerald-400 flex items-center gap-2 cursor-pointer" onclick="closeViews()">
         🦖 ROARER
       </h1>
-      <button id="userStatus" onclick="openMyProfile()" class="text-xs md:text-sm font-mono bg-emerald-950/80 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition">
-        Checking Auth...
-      </button>
+      <div class="flex items-center gap-2">
+        <!-- New Floating/Header Post Button (Shows when logged in) -->
+        <button id="openPostBtn" onclick="toggleRoarComposer()" class="hidden bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-3.5 py-1.5 rounded-full text-xs md:text-sm transition shadow-lg shadow-emerald-500/20 cursor-pointer">
+          + Roar
+        </button>
+        <button id="userStatus" onclick="openMyProfile()" class="text-xs md:text-sm font-mono bg-emerald-950/80 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition cursor-pointer">
+          Checking Auth...
+        </button>
+      </div>
     </header>
 
     <!-- Main View Area -->
@@ -33,7 +39,6 @@
           <p class="text-xs md:text-sm text-slate-400">Sign in to share your thoughts with the world</p>
         </div>
         
-        <!-- Google Sign-In -->
         <button
           id="googleBtn"
           class="w-full bg-slate-100 hover:bg-white text-slate-950 font-bold py-2.5 rounded-xl text-sm md:text-base flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer"
@@ -89,8 +94,13 @@
         </button>
       </div>
 
-      <!-- Create Roar Form -->
-      <form id="roarForm" class="mb-6 p-4 md:p-5 bg-slate-900/40 border border-slate-800/80 rounded-2xl hidden shadow-lg">
+      <!-- Collapsible Create Roar Form (Hidden by default until user clicks '+ Roar') -->
+      <form id="roarForm" class="hidden mb-6 p-4 md:p-5 bg-slate-900/60 border border-emerald-500/30 rounded-2xl shadow-xl transition-all">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">New Roar 🦖</span>
+          <button type="button" onclick="toggleRoarComposer()" class="text-slate-500 hover:text-slate-300 text-xs">✕ Close</button>
+        </div>
+
         <textarea
           id="roarInput"
           placeholder="ROAR YOUR THOUGHTS!! 🦖"
@@ -117,7 +127,7 @@
             type="submit"
             class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-6 py-2.5 rounded-full text-xs md:text-sm transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20 cursor-pointer"
           >
-            <span>ROAR 🦖</span>
+            <span>Publish Roar 🦖</span>
           </button>
         </div>
       </form>
@@ -207,7 +217,8 @@
       deleteDoc, 
       doc, 
       updateDoc, 
-      increment 
+      arrayUnion, 
+      arrayRemove 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const keyPart1 = "AIzaSyAj1k-";
@@ -234,6 +245,7 @@
     // Elements
     const authSection = document.getElementById("authSection");
     const roarForm = document.getElementById("roarForm");
+    const openPostBtn = document.getElementById("openPostBtn");
     const userStatus = document.getElementById("userStatus");
     const googleBtn = document.getElementById("googleBtn");
     const loginBtn = document.getElementById("loginBtn");
@@ -276,7 +288,7 @@
       if (roars.length === 0) {
         feedContainer.innerHTML = `
           <div class="text-center py-16 text-slate-500">
-            <p class="text-base md:text-lg font-medium">No Roars yet! ROAR YOUR THOUGHTS!! 🦖</p>
+            <p class="text-base md:text-lg font-medium">No Roars yet! ROAR YOUR THOUGHTS!! REX 🦖</p>
           </div>
         `;
         return;
@@ -300,6 +312,12 @@
           ? `<button onclick="deleteRoar('${roar.id}')" class="text-slate-600 hover:text-red-400 text-xs p-1 transition cursor-pointer">✕</button>` 
           : '';
 
+        // Handle arrays for Likes and Echoes to prevent duplicate spamming
+        const likedBy = roar.likedBy || [];
+        const echoedBy = roar.echoedBy || [];
+        const hasLiked = currentUser && likedBy.includes(currentUser.uid);
+        const hasEchoed = currentUser && echoedBy.includes(currentUser.uid);
+
         roarCard.innerHTML = `
           <div class="flex items-center justify-between mb-1">
             <div class="flex items-center gap-2 overflow-hidden cursor-pointer" onclick="openUserProfile('${roar.user}')">
@@ -316,17 +334,22 @@
           <p class="text-slate-300 text-sm md:text-base my-2 whitespace-pre-wrap leading-relaxed">${roar.content}</p>
           ${mediaHTML}
           <div class="flex gap-6 mt-4 text-xs md:text-sm text-slate-400 pt-2 border-t border-slate-800/40">
-            <button onclick="echoRoar('${roar.id}')" class="hover:text-emerald-400 flex items-center gap-1.5 transition active:scale-95 cursor-pointer">
-              🔁 ${roar.echos || 0} Echoes
+            <button onclick="toggleEcho('${roar.id}')" class="${hasEchoed ? 'text-emerald-400 font-bold' : 'hover:text-emerald-400'} flex items-center gap-1.5 transition active:scale-95 cursor-pointer">
+              🔁 ${echoedBy.length} Echoes
             </button>
-            <button onclick="likeRoar('${roar.id}')" class="hover:text-red-400 flex items-center gap-1.5 transition active:scale-95 cursor-pointer">
-              🔥 ${roar.likes || 0} Impact
+            <button onclick="toggleLike('${roar.id}')" class="${hasLiked ? 'text-red-400 font-bold' : 'hover:text-red-400'} flex items-center gap-1.5 transition active:scale-95 cursor-pointer">
+              🔥 ${likedBy.length} Impact
             </button>
           </div>
         `;
         feedContainer.appendChild(roarCard);
       });
     }
+
+    // Toggle Collapsible Composer
+    window.toggleRoarComposer = function() {
+      roarForm.classList.toggle("hidden");
+    };
 
     // View Navigation
     window.openForgotView = function() {
@@ -337,7 +360,8 @@
     };
 
     window.openUserProfile = function(username) {
-      const userRoars = roars.filter(r => r.user === username);
+      // Find all posts authored by this user
+      const userRoars = roars.filter(r => r.user.toLowerCase() === username.toLowerCase());
       profName.textContent = username;
       profHandle.textContent = `@${username.toLowerCase().replace(/\s+/g, '')}`;
       profRoarCount.textContent = userRoars.length;
@@ -404,12 +428,13 @@
           media: media || null,
           createdAt: Date.now(),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          likes: 0,
-          echos: 0,
+          likedBy: [],
+          echoedBy: [],
         });
 
         roarInput.value = "";
         mediaInput.value = "";
+        roarForm.classList.add("hidden");
       } catch (err) {
         alert("Error publishing Roar: " + err.message);
       }
@@ -442,10 +467,11 @@
       if (user) {
         userStatus.textContent = user.displayName || user.email.split('@')[0];
         authSection.classList.add("hidden");
-        roarForm.classList.remove("hidden");
+        openPostBtn.classList.remove("hidden");
       } else {
         userStatus.textContent = "Logged Out";
         authSection.classList.remove("hidden");
+        openPostBtn.classList.add("hidden");
         roarForm.classList.add("hidden");
         closeViews();
       }
@@ -454,17 +480,31 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Global Database Interactions
-    window.likeRoar = async function(docId) {
-      if (!currentUser) return alert("Sign in to like Roars!");
+    // Unique Like/Echo Toggle Functions (1 per user)
+    window.toggleLike = async function(docId) {
+      if (!currentUser) return alert("Sign in to impact Roars!");
       const roarDoc = doc(db, "roars", docId);
-      await updateDoc(roarDoc, { likes: increment(1) });
+      const target = roars.find(r => r.id === docId);
+      const likedBy = target?.likedBy || [];
+
+      if (likedBy.includes(currentUser.uid)) {
+        await updateDoc(roarDoc, { likedBy: arrayRemove(currentUser.uid) });
+      } else {
+        await updateDoc(roarDoc, { likedBy: arrayUnion(currentUser.uid) });
+      }
     };
 
-    window.echoRoar = async function(docId) {
+    window.toggleEcho = async function(docId) {
       if (!currentUser) return alert("Sign in to echo Roars!");
       const roarDoc = doc(db, "roars", docId);
-      await updateDoc(roarDoc, { echos: increment(1) });
+      const target = roars.find(r => r.id === docId);
+      const echoedBy = target?.echoedBy || [];
+
+      if (echoedBy.includes(currentUser.uid)) {
+        await updateDoc(roarDoc, { echoedBy: arrayRemove(currentUser.uid) });
+      } else {
+        await updateDoc(roarDoc, { echoedBy: arrayUnion(currentUser.uid) });
+      }
     };
 
     window.deleteRoar = async function(docId) {
