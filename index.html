@@ -259,6 +259,8 @@
       getFirestore, 
       collection, 
       addDoc, 
+      setDoc,
+      getDoc,
       onSnapshot, 
       query, 
       orderBy, 
@@ -294,6 +296,7 @@
 
     let roars = [];
     let currentUser = null;
+    let currentUserPfp = null;
     let activeProfileTargetUid = null;
     let tempSelectedPfp = null;
 
@@ -349,7 +352,7 @@
       }
     });
 
-    // Helper: Image Compressor to keep Base64 strings under Firebase's limit
+    // Helper: Image Compressor
     function compressImage(file, maxWidth, quality, callback) {
       const reader = new FileReader();
       reader.onload = function(event) {
@@ -369,7 +372,6 @@
           const ctx = canvas.getContext("2d");
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Returns compressed JPEG Data URL
           callback(canvas.toDataURL("image/jpeg", quality));
         };
         img.src = event.target.result;
@@ -377,7 +379,7 @@
       reader.readAsDataURL(file);
     }
 
-    // Helper: Render Profile Avatar HTML
+    // Helper: Render Avatar HTML
     function getAvatarHTML(photoURL, sizeClasses = "w-9 h-9 text-base") {
       if (photoURL) {
         return `<img src="${photoURL}" alt="Avatar" class="${sizeClasses} rounded-full object-cover border border-emerald-500/30" onerror="this.outerHTML='<div class=\\'${sizeClasses} rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black\\'>🦖</div>'" />`;
@@ -477,38 +479,44 @@
 
       const currentName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
       settingsNameInput.value = currentName;
-      tempSelectedPfp = currentUser.photoURL || null;
+      tempSelectedPfp = currentUserPfp || currentUser.photoURL || null;
       settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
       window.scrollTo(0, 0);
     };
 
-    // File Upload Handler with Auto Compression
+    // File Upload Handler
     pfpFileInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) return;
 
-      // Compress to 96px width at 60% JPEG quality so string fits under 2000 chars
-      compressImage(file, 96, 0.6, (compressedDataUrl) => {
+      compressImage(file, 120, 0.7, (compressedDataUrl) => {
         tempSelectedPfp = compressedDataUrl;
         settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
       });
     });
 
-    // Save Settings Button
+    // Save Settings Button (Saves to Firestore Document instead of Auth photoURL!)
     saveSettingsBtn.addEventListener("click", async () => {
       if (!currentUser) return;
       const newName = settingsNameInput.value.trim();
       if (!newName) return alert("Please enter a valid display name!");
 
       try {
-        await updateProfile(currentUser, {
+        // Update Auth Display Name safely
+        await updateProfile(currentUser, { displayName: newName });
+
+        // Save PFP inside Firestore User Doc
+        const userDocRef = doc(db, "users", currentUser.uid);
+        await setDoc(userDocRef, {
           displayName: newName,
-          photoURL: tempSelectedPfp || null
-        });
+          pfp: tempSelectedPfp || currentUser.photoURL || null
+        }, { merge: true });
+
+        currentUserPfp = tempSelectedPfp || currentUser.photoURL || null;
 
         userStatus.innerHTML = `
-          ${getAvatarHTML(currentUser.photoURL, "w-5 h-5 text-[10px]")}
-          <span>${currentUser.displayName}</span>
+          ${getAvatarHTML(currentUserPfp, "w-5 h-5 text-[10px]")}
+          <span>${newName}</span>
         `;
 
         alert("Profile updated successfully!");
@@ -535,7 +543,7 @@
       profRoarCount.textContent = userRoars.length;
 
       const userPost = roars.find(r => (r.uid === targetUid || r.user.toLowerCase() === targetUserLower) && r.userPfp);
-      const photoURL = userPost ? userPost.userPfp : (targetUid === currentUser?.uid ? currentUser?.photoURL : null);
+      const photoURL = userPost ? userPost.userPfp : (targetUid === currentUser?.uid ? currentUserPfp : null);
       profileAvatarContainer.innerHTML = getAvatarHTML(photoURL, "w-full h-full text-3xl");
 
       profileFeed.innerHTML = "";
@@ -611,7 +619,7 @@
         await addDoc(roarsRef, {
           uid: currentUser.uid,
           user: userName,
-          userPfp: currentUser.photoURL || null,
+          userPfp: currentUserPfp || currentUser.photoURL || null,
           handle: `@${userName.toLowerCase().replace(/\s+/g, '')}`,
           content: text,
           media: media || null,
@@ -651,18 +659,31 @@
       catch (err) { alert("Login Error: " + err.message); }
     });
 
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (user) {
+        // Load custom PFP from Firestore User Document if present
+        try {
+          const userDocSnap = await getDoc(doc(db, "users", user.uid));
+          if (userDocSnap.exists() && userDocSnap.data().pfp) {
+            currentUserPfp = userDocSnap.data().pfp;
+          } else {
+            currentUserPfp = user.photoURL || null;
+          }
+        } catch (e) {
+          currentUserPfp = user.photoURL || null;
+        }
+
         const name = user.displayName || user.email.split('@')[0];
         userStatus.innerHTML = `
-          ${getAvatarHTML(user.photoURL, "w-5 h-5 text-[10px]")}
+          ${getAvatarHTML(currentUserPfp, "w-5 h-5 text-[10px]")}
           <span>${name}</span>
         `;
         authSection.classList.add("hidden");
         openPostBtn.classList.remove("hidden");
         settingsBtn.classList.remove("hidden");
       } else {
+        currentUserPfp = null;
         userStatus.textContent = "Logged Out";
         authSection.classList.remove("hidden");
         openPostBtn.classList.add("hidden");
