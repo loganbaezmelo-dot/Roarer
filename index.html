@@ -357,9 +357,8 @@
       resetNotice.classList.add("hidden");
     };
 
-    // Updated Profile View: Shows authored posts AND echoed posts!
+    // Fixed Profile View: Checks both username AND UID for echoes!
     window.openUserProfile = function(username, targetUid) {
-      // Filter by authored OR echoed by this target UID/username
       const userRoars = roars.filter(r => {
         const isAuthored = r.user.toLowerCase() === username.toLowerCase() || (targetUid && r.uid === targetUid);
         const isEchoed = targetUid ? (r.echoedBy && r.echoedBy.includes(targetUid)) : false;
