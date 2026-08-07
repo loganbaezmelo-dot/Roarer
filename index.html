@@ -15,21 +15,81 @@
       <h1 class="text-2xl font-black tracking-wider text-emerald-400 flex items-center gap-2">
         🦖 ROARER
       </h1>
-      <span class="text-xs font-mono bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800">
-        Live Feed
-      </span>
+      <div id="userStatus" class="text-xs font-mono bg-emerald-950 text-emerald-400 px-2 py-1 rounded border border-emerald-800">
+        Checking Auth...
+      </div>
     </header>
 
-    <!-- Create Roar Form -->
-    <form id="roarForm" class="mb-6 border-b border-slate-800 pb-4">
+    <!-- Auth Container -->
+    <div id="authSection" class="mb-6 p-4 bg-slate-900 border border-slate-800 rounded-xl space-y-3">
+      <h2 class="text-lg font-bold">Sign in to Roar 🦖</h2>
+      
+      <!-- Google Sign-In Button -->
+      <button
+        id="googleBtn"
+        class="w-full bg-white text-slate-900 font-bold py-2 rounded-lg text-sm flex items-center justify-center gap-2 hover:bg-slate-200 transition"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3h3.88c2.27-2.09 3.665-5.17 3.665-9.12z"/>
+          <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/>
+          <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.09z"/>
+          <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.09c.95-2.85 3.6-4.96 6.72-4.96z"/>
+        </svg>
+        Continue with Google
+      </button>
+
+      <div class="flex items-center gap-2 my-2 text-slate-600 text-xs">
+        <div class="h-px bg-slate-800 flex-1"></div>
+        <span>OR</span>
+        <div class="h-px bg-slate-800 flex-1"></div>
+      </div>
+
+      <!-- Email/Password Inputs -->
+      <input
+        type="email"
+        id="emailInput"
+        placeholder="Email address"
+        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      />
+      <input
+        type="password"
+        id="passInput"
+        placeholder="Password"
+        class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+      />
+
+      <div class="flex gap-2 pt-1">
+        <button
+          id="loginBtn"
+          class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold py-2 rounded-lg text-sm transition"
+        >
+          Log In
+        </button>
+        <button
+          id="signupBtn"
+          class="flex-1 border border-slate-700 hover:border-emerald-500 text-slate-200 font-bold py-2 rounded-lg text-sm transition"
+        >
+          Sign Up
+        </button>
+      </div>
+
+      <button
+        id="sendLinkBtn"
+        class="w-full text-xs text-slate-400 hover:text-emerald-400 underline text-center pt-1 block"
+      >
+        Send Passwordless Magic Link Instead
+      </button>
+    </div>
+
+    <!-- Create Roar Form (Shows if logged in) -->
+    <form id="roarForm" class="mb-6 border-b border-slate-800 pb-4 hidden">
       <textarea
         id="roarInput"
-        placeholder="ROAR YOUR THOUGHTS!! REX..."
+        placeholder="ROAR YOUR THOUGHTS!! 🦖"
         class="w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none h-24 mb-2"
         required
       ></textarea>
 
-      <!-- Optional Media URL Input -->
       <input
         type="url"
         id="mediaInput"
@@ -37,7 +97,14 @@
         class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-3"
       />
 
-      <div class="flex justify-end">
+      <div class="flex justify-between items-center">
+        <button
+          type="button"
+          id="logoutBtn"
+          class="text-xs text-slate-500 hover:text-red-400"
+        >
+          Sign Out
+        </button>
         <button
           type="submit"
           class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2 rounded-full transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20"
@@ -48,17 +115,56 @@
     </form>
 
     <!-- Feed List -->
-    <div id="feed" class="space-y-4">
-      <!-- User Roars dynamically render here -->
-    </div>
+    <div id="feed" class="space-y-4"></div>
   </main>
 
-  <script>
-    // Load existing roars from LocalStorage or start empty
-    let roars = JSON.parse(localStorage.getItem("roarer_posts")) || [];
+  <!-- Firebase Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { 
+      getAuth, 
+      GoogleAuthProvider, 
+      signInWithPopup, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword,
+      sendSignInLinkToEmail,
+      isSignInWithEmailLink,
+      signInWithEmailLink,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    const feedContainer = document.getElementById("feed");
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAj1k-Z70v0OK9w0hjvCfMi35p6CbqApis",
+      authDomain: "everyroar.firebaseapp.com",
+      projectId: "everyroar",
+      storageBucket: "everyroar.firebasestorage.app",
+      messagingSenderId: "908189327737",
+      appId: "1:908189327737:web:fa4ef5656cf577e9de8fa8",
+      measurementId: "G-29T26222SF"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const googleProvider = new GoogleAuthProvider();
+
+    // Local State
+    let roars = JSON.parse(localStorage.getItem("roarer_posts")) || [];
+    let currentUser = null;
+
+    // UI Elements
+    const authSection = document.getElementById("authSection");
     const roarForm = document.getElementById("roarForm");
+    const userStatus = document.getElementById("userStatus");
+    const googleBtn = document.getElementById("googleBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
+    const sendLinkBtn = document.getElementById("sendLinkBtn");
+    const emailInput = document.getElementById("emailInput");
+    const passInput = document.getElementById("passInput");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const feedContainer = document.getElementById("feed");
     const roarInput = document.getElementById("roarInput");
     const mediaInput = document.getElementById("mediaInput");
 
@@ -67,7 +173,7 @@
       localStorage.setItem("roarer_posts", JSON.stringify(roars));
     }
 
-    // Render Roars Function
+    // Render Feed
     function renderRoars() {
       feedContainer.innerHTML = "";
 
@@ -84,7 +190,6 @@
         const roarCard = document.createElement("div");
         roarCard.className = "p-4 bg-slate-900/50 border border-slate-800 rounded-xl hover:border-slate-700 transition relative group";
         
-        // Media Attachment Renderer
         let mediaHTML = "";
         if (roar.media) {
           if (roar.media.match(/\.(mp4|webm|ogg)$/i)) {
@@ -123,17 +228,19 @@
       });
     }
 
-    // Add New Roar
+    // Post Roar
     roarForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const text = roarInput.value.trim();
       const media = mediaInput.value.trim();
       if (!text) return;
 
+      const userName = currentUser?.displayName || currentUser?.email?.split('@')[0] || "Roarer";
+
       const newRoar = {
         id: Date.now(),
-        user: "Creator",
-        handle: "@creator",
+        user: userName,
+        handle: `@${userName.toLowerCase().replace(/\s+/g, '')}`,
         content: text,
         media: media || null,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -148,7 +255,88 @@
       renderRoars();
     });
 
-    // Interaction Handlers
+    // 1. Google Auth
+    googleBtn.addEventListener("click", async () => {
+      try {
+        await signInWithPopup(auth, googleProvider);
+      } catch (err) {
+        alert("Google Sign-In Error: " + err.message);
+      }
+    });
+
+    // 2. Email / Password Signup
+    signupBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      const password = passInput.value.trim();
+      if (!email || !password) return alert("Enter email and password!");
+
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("Signup Error: " + err.message);
+      }
+    });
+
+    // 3. Email / Password Login
+    loginBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      const password = passInput.value.trim();
+      if (!email || !password) return alert("Enter email and password!");
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (err) {
+        alert("Login Error: " + err.message);
+      }
+    });
+
+    // 4. Passwordless Link
+    const actionCodeSettings = {
+      url: window.location.href,
+      handleCodeInApp: true,
+    };
+
+    sendLinkBtn.addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      if (!email) return alert("Enter your email!");
+
+      try {
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        window.localStorage.setItem('emailForSignIn', email);
+        alert("Magic link sent! Check your inbox.");
+      } catch (err) {
+        alert("Magic Link Error: " + err.message);
+      }
+    });
+
+    // Complete Passwordless Sign-In if coming back from email
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let email = window.localStorage.getItem('emailForSignIn');
+      if (!email) email = window.prompt('Confirm your email:');
+      signInWithEmailLink(auth, email, window.location.href)
+        .then(() => window.localStorage.removeItem('emailForSignIn'))
+        .catch((err) => alert("Sign-in error: " + err.message));
+    }
+
+    // Auth State Listener
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        userStatus.textContent = user.displayName || user.email.split('@')[0];
+        authSection.classList.add("hidden");
+        roarForm.classList.remove("hidden");
+      } else {
+        userStatus.textContent = "Logged Out";
+        authSection.classList.remove("hidden");
+        roarForm.classList.add("hidden");
+      }
+      renderRoars();
+    });
+
+    // Logout
+    logoutBtn.addEventListener("click", () => signOut(auth));
+
+    // Global Feed Interactions
     window.likeRoar = function(id) {
       const target = roars.find(r => r.id === id);
       if (target) {
@@ -173,7 +361,6 @@
       renderRoars();
     };
 
-    // Initial Render
     renderRoars();
   </script>
 </body>
