@@ -7,32 +7,31 @@
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Mobile app smooth viewport scroll */
     body { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex justify-center pb-20 font-sans antialiased selection:bg-emerald-500 selection:text-slate-950">
 
-  <main class="w-full max-w-md border-x border-slate-900 min-h-screen flex flex-col bg-slate-950">
-    <!-- Mobile Glass Sticky Header -->
-    <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 py-3 flex items-center justify-between">
-      <h1 class="text-xl font-black tracking-wider text-emerald-400 flex items-center gap-1.5">
+  <main class="w-full max-w-md border-x border-slate-900 min-h-screen flex flex-col bg-slate-950 relative">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 backdrop-blur-md bg-slate-950/80 border-b border-slate-900 px-4 py-3 flex items-center justify-between">
+      <h1 class="text-xl font-black tracking-wider text-emerald-400 flex items-center gap-1.5 cursor-pointer" onclick="closeProfile()">
         🦖 ROARER
       </h1>
-      <div id="userStatus" class="text-xs font-mono bg-emerald-950/80 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-800/60 shadow-sm">
+      <button id="userStatus" onclick="openMyProfile()" class="text-xs font-mono bg-emerald-950/80 text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition">
         Checking Auth...
-      </div>
+      </button>
     </header>
 
-    <div class="p-4 flex-1">
-      <!-- Auth Screen (Shows if logged out) -->
+    <!-- Main View Area -->
+    <div id="mainFeedView" class="p-4 flex-1">
+      <!-- Auth Screen -->
       <div id="authSection" class="p-5 bg-slate-900/60 border border-slate-800/80 rounded-2xl space-y-3.5 shadow-xl">
         <div class="text-center pb-1">
           <h2 class="text-lg font-bold text-slate-100">Welcome to Roarer 🦖</h2>
           <p class="text-xs text-slate-400">Sign in to share your thoughts with the world</p>
         </div>
         
-        <!-- Google Sign-In Button -->
         <button
           id="googleBtn"
           class="w-full bg-slate-100 hover:bg-white text-slate-950 font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 transition active:scale-95 shadow-md"
@@ -52,7 +51,6 @@
           <div class="h-px bg-slate-800 flex-1"></div>
         </div>
 
-        <!-- Inputs -->
         <input
           type="email"
           id="emailInput"
@@ -88,7 +86,6 @@
           Send Passwordless Magic Link Instead
         </button>
 
-        <!-- Spam Warning Message Box -->
         <div id="spamNotice" class="hidden mt-3 p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-300 space-y-1">
           <p class="font-bold flex items-center gap-1">📩 Check your inbox & spam folder!</p>
           <p class="text-[11px] text-amber-200/80 leading-relaxed">
@@ -97,7 +94,7 @@
         </div>
       </div>
 
-      <!-- Create Roar Form (Shows if logged in) -->
+      <!-- Create Roar Form -->
       <form id="roarForm" class="mb-6 p-4 bg-slate-900/40 border border-slate-800/80 rounded-2xl hidden shadow-lg">
         <textarea
           id="roarInput"
@@ -125,13 +122,40 @@
             type="submit"
             class="bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-5 py-2 rounded-full text-xs transition-all flex items-center gap-1 shadow-lg shadow-emerald-500/20"
           >
-            <span>ROAR REX</span>
+            <span>ROAR 🦖</span>
           </button>
         </div>
       </form>
 
       <!-- Feed List -->
       <div id="feed" class="space-y-3"></div>
+    </div>
+
+    <!-- Profile View Screen -->
+    <div id="profileView" class="hidden p-4 flex-1">
+      <button onclick="closeProfile()" class="mb-3 text-xs text-emerald-400 hover:underline flex items-center gap-1">
+        ← Back to Feed
+      </button>
+
+      <div class="p-5 bg-slate-900/80 border border-slate-800 rounded-2xl text-center mb-6 shadow-xl relative overflow-hidden">
+        <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center text-2xl mx-auto mb-2 font-black">
+          🦖
+        </div>
+        <h2 id="profName" class="text-lg font-bold text-slate-100">User</h2>
+        <p id="profHandle" class="text-xs text-slate-400 mb-3">@handle</p>
+        <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">
+          🦖 Verified Roarer
+        </span>
+
+        <div class="flex justify-center gap-6 mt-4 pt-3 border-t border-slate-800/80 text-xs text-slate-400">
+          <div>
+            <span id="profRoarCount" class="font-bold text-slate-100">0</span> Roars
+          </div>
+        </div>
+      </div>
+
+      <h3 class="text-xs font-mono text-slate-500 mb-3 uppercase tracking-wider">User's Roars</h3>
+      <div id="profileFeed" class="space-y-3"></div>
     </div>
   </main>
 
@@ -151,7 +175,6 @@
       signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-    // Split API Key
     const keyPart1 = "AIzaSyAj1k-";
     const keyPart2 = "Z70v0OK9w0hjvCfMi35p6CbqApis";
 
@@ -172,7 +195,7 @@
     let roars = JSON.parse(localStorage.getItem("roarer_posts")) || [];
     let currentUser = null;
 
-    // UI Elements
+    // Elements
     const authSection = document.getElementById("authSection");
     const roarForm = document.getElementById("roarForm");
     const userStatus = document.getElementById("userStatus");
@@ -187,6 +210,13 @@
     const feedContainer = document.getElementById("feed");
     const roarInput = document.getElementById("roarInput");
     const mediaInput = document.getElementById("mediaInput");
+
+    const mainFeedView = document.getElementById("mainFeedView");
+    const profileView = document.getElementById("profileView");
+    const profName = document.getElementById("profName");
+    const profHandle = document.getElementById("profHandle");
+    const profRoarCount = document.getElementById("profRoarCount");
+    const profileFeed = document.getElementById("profileFeed");
 
     function saveRoars() {
       localStorage.setItem("roarer_posts", JSON.stringify(roars));
@@ -224,8 +254,8 @@
 
         roarCard.innerHTML = `
           <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center gap-1.5 overflow-hidden">
-              <span class="font-bold text-slate-200 text-sm truncate">${roar.user}</span>
+            <div class="flex items-center gap-1.5 overflow-hidden cursor-pointer" onclick="openUserProfile('${roar.user}')">
+              <span class="font-bold text-slate-200 text-sm truncate hover:text-emerald-400 transition">${roar.user}</span>
               <span class="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
                 🦖 Verified
               </span>
@@ -250,7 +280,41 @@
       });
     }
 
-    // Submit Roar
+    // Profile Page Nav Logic
+    window.openUserProfile = function(username) {
+      const userRoars = roars.filter(r => r.user === username);
+      profName.textContent = username;
+      profHandle.textContent = `@${username.toLowerCase().replace(/\s+/g, '')}`;
+      profRoarCount.textContent = userRoars.length;
+
+      profileFeed.innerHTML = "";
+      if (userRoars.length === 0) {
+        profileFeed.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">No Roars from this user yet.</p>`;
+      } else {
+        userRoars.forEach(r => {
+          const card = document.createElement("div");
+          card.className = "p-3 bg-slate-900/40 border border-slate-800/60 rounded-xl text-xs text-slate-300";
+          card.innerHTML = `<p class="whitespace-pre-wrap">${r.content}</p><span class="text-[10px] text-slate-500 mt-1 block">${r.timestamp}</span>`;
+          profileFeed.appendChild(card);
+        });
+      }
+
+      mainFeedView.classList.add("hidden");
+      profileView.classList.remove("hidden");
+    };
+
+    window.openMyProfile = function() {
+      if (!currentUser) return;
+      const userName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
+      openUserProfile(userName);
+    };
+
+    window.closeProfile = function() {
+      profileView.classList.add("hidden");
+      mainFeedView.classList.remove("hidden");
+    };
+
+    // Form Submit
     roarForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const text = roarInput.value.trim();
@@ -278,58 +342,38 @@
       renderRoars();
     });
 
-    // Google Sign-In
+    // Auth Actions
     googleBtn.addEventListener("click", async () => {
-      try {
-        await signInWithPopup(auth, googleProvider);
-      } catch (err) {
-        alert("Google Sign-In Error: " + err.message);
-      }
+      try { await signInWithPopup(auth, googleProvider); } 
+      catch (err) { alert("Google Error: " + err.message); }
     });
 
-    // Email/Password Signup
     signupBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       const password = passInput.value.trim();
       if (!email || !password) return alert("Enter email and password!");
-
-      try {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        alert("Signup Error: " + err.message);
-      }
+      try { await createUserWithEmailAndPassword(auth, email, password); } 
+      catch (err) { alert("Signup Error: " + err.message); }
     });
 
-    // Email/Password Login
     loginBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       const password = passInput.value.trim();
       if (!email || !password) return alert("Enter email and password!");
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (err) {
-        alert("Login Error: " + err.message);
-      }
+      try { await signInWithEmailAndPassword(auth, email, password); } 
+      catch (err) { alert("Login Error: " + err.message); }
     });
 
-    // Passwordless Magic Link
-    const actionCodeSettings = {
-      url: window.location.href,
-      handleCodeInApp: true,
-    };
+    const actionCodeSettings = { url: window.location.href, handleCodeInApp: true };
 
     sendLinkBtn.addEventListener("click", async () => {
       const email = emailInput.value.trim();
       if (!email) return alert("Enter your email first!");
-
       try {
         await sendSignInLinkToEmail(auth, email, actionCodeSettings);
         window.localStorage.setItem('emailForSignIn', email);
         spamNotice.classList.remove("hidden");
-      } catch (err) {
-        alert("Magic Link Error: " + err.message);
-      }
+      } catch (err) { alert("Magic Link Error: " + err.message); }
     });
 
     if (isSignInWithEmailLink(auth, window.location.href)) {
@@ -340,7 +384,6 @@
         .catch((err) => alert("Sign-in error: " + err.message));
     }
 
-    // Auth Listener
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       if (user) {
@@ -351,6 +394,7 @@
         userStatus.textContent = "Logged Out";
         authSection.classList.remove("hidden");
         roarForm.classList.add("hidden");
+        closeProfile();
       }
       renderRoars();
     });
@@ -359,20 +403,12 @@
 
     window.likeRoar = function(id) {
       const target = roars.find(r => r.id === id);
-      if (target) {
-        target.likes++;
-        saveRoars();
-        renderRoars();
-      }
+      if (target) { target.likes++; saveRoars(); renderRoars(); }
     };
 
     window.echoRoar = function(id) {
       const target = roars.find(r => r.id === id);
-      if (target) {
-        target.echos++;
-        saveRoars();
-        renderRoars();
-      }
+      if (target) { target.echos++; saveRoars(); renderRoars(); }
     };
 
     window.deleteRoar = function(id) {
