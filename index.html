@@ -240,6 +240,7 @@
 
     let roars = [];
     let currentUser = null;
+    let activeProfileTargetUid = null;
 
     // Elements
     const authSection = document.getElementById("authSection");
@@ -280,9 +281,9 @@
       }));
       renderRoars();
 
-      // If profile is open, update its content in real-time
-      if (!profileView.classList.contains("hidden") && currentUser) {
-        openUserProfile(profName.textContent, currentUser.uid);
+      // If profile view is currently active, live-update it
+      if (!profileView.classList.contains("hidden")) {
+        openUserProfile(profName.textContent, activeProfileTargetUid);
       }
     });
 
@@ -362,14 +363,19 @@
       resetNotice.classList.add("hidden");
     };
 
-    // Profile View matching by UID and Username
+    // Corrected Profile Matching Filter
     window.openUserProfile = function(username, targetUid) {
+      activeProfileTargetUid = targetUid || null;
       const targetUserLower = username.toLowerCase();
 
       const userRoars = roars.filter(r => {
+        // Author check
         const isAuthored = (r.user && r.user.toLowerCase() === targetUserLower) || (targetUid && r.uid === targetUid);
-        const echoedBy = r.echoedBy || [];
+        
+        // Echo array check
+        const echoedBy = Array.isArray(r.echoedBy) ? r.echoedBy : [];
         const isEchoed = targetUid ? echoedBy.includes(targetUid) : false;
+
         return isAuthored || isEchoed;
       });
 
@@ -503,12 +509,12 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Clean Toggle Like Function (Stores 1 UID)
+    // Clean Toggle Like Function
     window.toggleLike = async function(docId) {
       if (!currentUser) return alert("Sign in to impact Roars!");
       const roarDoc = doc(db, "roars", docId);
       const target = roars.find(r => r.id === docId);
-      const likedBy = target?.likedBy || [];
+      const likedBy = Array.isArray(target?.likedBy) ? target.likedBy : [];
 
       if (likedBy.includes(currentUser.uid)) {
         await updateDoc(roarDoc, { likedBy: arrayRemove(currentUser.uid) });
@@ -517,12 +523,12 @@
       }
     };
 
-    // Clean Toggle Echo Function (Stores 1 UID)
+    // Clean Toggle Echo Function
     window.toggleEcho = async function(docId) {
       if (!currentUser) return alert("Sign in to echo Roars!");
       const roarDoc = doc(db, "roars", docId);
       const target = roars.find(r => r.id === docId);
-      const echoedBy = target?.echoedBy || [];
+      const echoedBy = Array.isArray(target?.echoedBy) ? target.echoedBy : [];
 
       if (echoedBy.includes(currentUser.uid)) {
         await updateDoc(roarDoc, { echoedBy: arrayRemove(currentUser.uid) });
