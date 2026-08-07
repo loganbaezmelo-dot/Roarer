@@ -23,7 +23,10 @@
         <button id="openPostBtn" onclick="toggleRoarComposer()" class="hidden bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black px-3.5 py-1.5 rounded-full text-xs md:text-sm transition shadow-lg shadow-emerald-500/20 cursor-pointer">
           + Roar
         </button>
-        <button id="userStatus" onclick="openMyProfile()" class="text-xs md:text-sm font-mono bg-emerald-950/80 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition cursor-pointer">
+        <button id="settingsBtn" onclick="openSettingsView()" class="hidden text-slate-400 hover:text-emerald-400 p-1.5 transition text-base cursor-pointer" title="Settings">
+          ⚙️
+        </button>
+        <button id="userStatus" onclick="openMyProfile()" class="text-xs md:text-sm font-mono bg-emerald-950/80 text-emerald-400 px-3 py-1 rounded-full border border-emerald-800/60 shadow-sm hover:border-emerald-500 transition cursor-pointer flex items-center gap-2">
           Checking Auth...
         </button>
       </div>
@@ -97,7 +100,7 @@
       <form id="roarForm" class="hidden mb-6 p-4 md:p-5 bg-slate-900/60 border border-emerald-500/30 rounded-2xl shadow-xl transition-all">
         <div class="flex justify-between items-center mb-2">
           <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">New Roar 🦖</span>
-          <button type="button" onclick="toggleRoarComposer()" class="text-slate-500 hover:text-slate-300 text-xs">✕ Close</button>
+          <button type="button" onclick="toggleRoarComposer()" class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer">✕ Close</button>
         </div>
 
         <textarea
@@ -133,6 +136,51 @@
 
       <!-- Feed List -->
       <div id="feed" class="space-y-4"></div>
+    </div>
+
+    <!-- Settings View Screen -->
+    <div id="settingsView" class="hidden p-4 md:p-6 flex-1">
+      <button onclick="closeViews()" class="mb-4 text-xs md:text-sm text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer">
+        ← Back to Feed
+      </button>
+
+      <div class="p-6 md:p-8 bg-slate-900/80 border border-slate-800 rounded-2xl max-w-md mx-auto shadow-xl space-y-5">
+        <h2 class="text-lg md:text-xl font-bold text-slate-100 flex items-center gap-2">
+          ⚙️ Account Settings
+        </h2>
+
+        <!-- Profile Picture Preview & Upload -->
+        <div class="flex flex-col items-center gap-3 py-2 border-b border-slate-800/80 pb-5">
+          <div id="settingsPfpPreview" class="w-20 h-20 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center text-3xl overflow-hidden font-black">
+            🦖
+          </div>
+          <div class="text-center">
+            <label for="pfpFileInput" class="inline-block bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer transition">
+              📷 Choose Image from Files
+            </label>
+            <input type="file" id="pfpFileInput" accept="image/*" class="hidden" />
+            <p class="text-[11px] text-slate-500 mt-1">Upload JPG or PNG from your phone/computer</p>
+          </div>
+        </div>
+
+        <!-- Custom Name Input -->
+        <div class="space-y-1.5">
+          <label class="text-xs font-mono text-slate-400 uppercase tracking-wider block">Display Name</label>
+          <input
+            type="text"
+            id="settingsNameInput"
+            placeholder="Your Display Name"
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-emerald-500 transition"
+          />
+        </div>
+
+        <button
+          id="saveSettingsBtn"
+          class="w-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/10 cursor-pointer"
+        >
+          Save Profile Changes
+        </button>
+      </div>
     </div>
 
     <!-- Forgot Password View -->
@@ -172,7 +220,7 @@
       </button>
 
       <div class="p-6 md:p-8 bg-slate-900/80 border border-slate-800 rounded-2xl text-center mb-6 shadow-xl relative overflow-hidden">
-        <div class="w-16 h-16 md:w-20 md:h-20 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center text-2xl md:text-3xl mx-auto mb-3 font-black">
+        <div id="profileAvatarContainer" class="w-16 h-16 md:w-20 md:h-20 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full flex items-center justify-center text-2xl md:text-3xl mx-auto mb-3 font-black overflow-hidden">
           🦖
         </div>
         <h2 id="profName" class="text-lg md:text-xl font-bold text-slate-100">User</h2>
@@ -204,6 +252,7 @@
       signInWithEmailAndPassword,
       sendPasswordResetEmail,
       onAuthStateChanged,
+      updateProfile,
       signOut
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { 
@@ -241,11 +290,13 @@
     let roars = [];
     let currentUser = null;
     let activeProfileTargetUid = null;
+    let tempSelectedPfp = null;
 
     // Elements
     const authSection = document.getElementById("authSection");
     const roarForm = document.getElementById("roarForm");
     const openPostBtn = document.getElementById("openPostBtn");
+    const settingsBtn = document.getElementById("settingsBtn");
     const userStatus = document.getElementById("userStatus");
     const googleBtn = document.getElementById("googleBtn");
     const loginBtn = document.getElementById("loginBtn");
@@ -260,6 +311,7 @@
     // Views
     const mainFeedView = document.getElementById("mainFeedView");
     const profileView = document.getElementById("profileView");
+    const settingsView = document.getElementById("settingsView");
     const forgotView = document.getElementById("forgotView");
     const resetEmailInput = document.getElementById("resetEmailInput");
     const sendResetBtn = document.getElementById("sendResetBtn");
@@ -269,6 +321,12 @@
     const profHandle = document.getElementById("profHandle");
     const profRoarCount = document.getElementById("profRoarCount");
     const profileFeed = document.getElementById("profileFeed");
+    const profileAvatarContainer = document.getElementById("profileAvatarContainer");
+
+    const settingsPfpPreview = document.getElementById("settingsPfpPreview");
+    const pfpFileInput = document.getElementById("pfpFileInput");
+    const settingsNameInput = document.getElementById("settingsNameInput");
+    const saveSettingsBtn = document.getElementById("saveSettingsBtn");
 
     // Firestore Real-Time Global Feed Listener
     const roarsRef = collection(db, "roars");
@@ -281,11 +339,18 @@
       }));
       renderRoars();
 
-      // If profile view is currently active, live-update it
       if (!profileView.classList.contains("hidden")) {
         openUserProfile(profName.textContent, activeProfileTargetUid);
       }
     });
+
+    // Helper: Render Profile Avatar HTML
+    function getAvatarHTML(photoURL, sizeClasses = "w-9 h-9 text-base") {
+      if (photoURL) {
+        return `<img src="${photoURL}" alt="Avatar" class="${sizeClasses} rounded-full object-cover border border-emerald-500/30" onerror="this.outerHTML='<div class=\\'${sizeClasses} rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black\\'>🦖</div>'" />`;
+      }
+      return `<div class="${sizeClasses} rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black">🦖</div>`;
+    }
 
     function renderRoars() {
       feedContainer.innerHTML = "";
@@ -322,13 +387,18 @@
         const hasLiked = currentUser && likedBy.includes(currentUser.uid);
         const hasEchoed = currentUser && echoedBy.includes(currentUser.uid);
 
+        const pfpHTML = getAvatarHTML(roar.userPfp, "w-8 h-8 md:w-9 md:h-9 text-xs");
+
         roarCard.innerHTML = `
           <div class="flex items-center justify-between mb-1">
             <div class="flex items-center gap-2 overflow-hidden cursor-pointer" onclick="openUserProfile('${roar.user}', '${roar.uid}')">
-              <span class="font-bold text-slate-200 text-sm md:text-base truncate hover:text-emerald-400 transition">${roar.user}</span>
-              <span class="text-[10px] md:text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
-                🦖 Verified
-              </span>
+              ${pfpHTML}
+              <div class="flex items-center gap-1.5 overflow-hidden">
+                <span class="font-bold text-slate-200 text-sm md:text-base truncate hover:text-emerald-400 transition">${roar.user}</span>
+                <span class="text-[10px] md:text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+                  🦖 Verified
+                </span>
+              </div>
             </div>
             <div class="flex items-center gap-2 shrink-0">
               <span class="text-[11px] md:text-xs text-slate-500">${roar.timestamp}</span>
@@ -359,29 +429,87 @@
     window.openForgotView = function() {
       mainFeedView.classList.add("hidden");
       profileView.classList.add("hidden");
+      settingsView.classList.add("hidden");
       forgotView.classList.remove("hidden");
       resetNotice.classList.add("hidden");
     };
 
-    // Corrected Profile Matching Filter
+    window.openSettingsView = function() {
+      if (!currentUser) return;
+      mainFeedView.classList.add("hidden");
+      profileView.classList.add("hidden");
+      forgotView.classList.add("hidden");
+      settingsView.classList.remove("hidden");
+
+      const currentName = currentUser.displayName || currentUser.email?.split('@')[0] || "Roarer";
+      settingsNameInput.value = currentName;
+      tempSelectedPfp = currentUser.photoURL || null;
+      settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
+    };
+
+    // File Upload Handler for Local Photo Selection
+    pfpFileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert("Image is too large! Please select an image under 2MB.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        tempSelectedPfp = event.target.result; // Base64 Data URL
+        settingsPfpPreview.innerHTML = getAvatarHTML(tempSelectedPfp, "w-full h-full text-3xl");
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Save Settings Button
+    saveSettingsBtn.addEventListener("click", async () => {
+      if (!currentUser) return;
+      const newName = settingsNameInput.value.trim();
+      if (!newName) return alert("Please enter a valid display name!");
+
+      try {
+        await updateProfile(currentUser, {
+          displayName: newName,
+          photoURL: tempSelectedPfp || null
+        });
+
+        // Refresh Auth UI
+        userStatus.innerHTML = `
+          ${getAvatarHTML(currentUser.photoURL, "w-5 h-5 text-[10px]")}
+          <span>${currentUser.displayName}</span>
+        `;
+
+        alert("Profile updated successfully!");
+        closeViews();
+      } catch (err) {
+        alert("Error saving settings: " + err.message);
+      }
+    });
+
+    // Profile View Matching
     window.openUserProfile = function(username, targetUid) {
       activeProfileTargetUid = targetUid || null;
       const targetUserLower = username.toLowerCase();
 
       const userRoars = roars.filter(r => {
-        // Author check
         const isAuthored = (r.user && r.user.toLowerCase() === targetUserLower) || (targetUid && r.uid === targetUid);
-        
-        // Echo array check
         const echoedBy = Array.isArray(r.echoedBy) ? r.echoedBy : [];
         const isEchoed = targetUid ? echoedBy.includes(targetUid) : false;
-
         return isAuthored || isEchoed;
       });
 
       profName.textContent = username;
       profHandle.textContent = `@${username.toLowerCase().replace(/\s+/g, '')}`;
       profRoarCount.textContent = userRoars.length;
+
+      // Find user photo
+      const userPost = roars.find(r => (r.uid === targetUid || r.user.toLowerCase() === targetUserLower) && r.userPfp);
+      const photoURL = userPost ? userPost.userPfp : (targetUid === currentUser?.uid ? currentUser?.photoURL : null);
+      profileAvatarContainer.innerHTML = getAvatarHTML(photoURL, "w-full h-full text-3xl");
 
       profileFeed.innerHTML = "";
       if (userRoars.length === 0) {
@@ -409,6 +537,7 @@
 
       mainFeedView.classList.add("hidden");
       forgotView.classList.add("hidden");
+      settingsView.classList.add("hidden");
       profileView.classList.remove("hidden");
     };
 
@@ -421,6 +550,7 @@
     window.closeViews = function() {
       profileView.classList.add("hidden");
       forgotView.classList.add("hidden");
+      settingsView.classList.add("hidden");
       mainFeedView.classList.remove("hidden");
     };
 
@@ -439,7 +569,7 @@
       }
     });
 
-    // Create Roar in Firestore
+    // Create Roar in Firestore (Attaches current user photoURL)
     roarForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = roarInput.value.trim();
@@ -452,6 +582,7 @@
         await addDoc(roarsRef, {
           uid: currentUser.uid,
           user: userName,
+          userPfp: currentUser.photoURL || null,
           handle: `@${userName.toLowerCase().replace(/\s+/g, '')}`,
           content: text,
           media: media || null,
@@ -494,13 +625,19 @@
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       if (user) {
-        userStatus.textContent = user.displayName || user.email.split('@')[0];
+        const name = user.displayName || user.email.split('@')[0];
+        userStatus.innerHTML = `
+          ${getAvatarHTML(user.photoURL, "w-5 h-5 text-[10px]")}
+          <span>${name}</span>
+        `;
         authSection.classList.add("hidden");
         openPostBtn.classList.remove("hidden");
+        settingsBtn.classList.remove("hidden");
       } else {
         userStatus.textContent = "Logged Out";
         authSection.classList.remove("hidden");
         openPostBtn.classList.add("hidden");
+        settingsBtn.classList.add("hidden");
         roarForm.classList.add("hidden");
         closeViews();
       }
@@ -509,7 +646,7 @@
 
     logoutBtn.addEventListener("click", () => signOut(auth));
 
-    // Clean Toggle Like Function
+    // Toggle Like
     window.toggleLike = async function(docId) {
       if (!currentUser) return alert("Sign in to impact Roars!");
       const roarDoc = doc(db, "roars", docId);
@@ -523,7 +660,7 @@
       }
     };
 
-    // Clean Toggle Echo Function
+    // Toggle Echo
     window.toggleEcho = async function(docId) {
       if (!currentUser) return alert("Sign in to echo Roars!");
       const roarDoc = doc(db, "roars", docId);
